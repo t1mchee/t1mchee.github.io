@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ridge Regression Is (Sort Of) Doing PCA – Tim Chee</title>
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+    onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
+</head>
+<body>
+  <div class="container">
+    <nav>
+      <a href="../index.html" class="site-name">Tim Chee</a>
+      <a href="../index.html">About</a>
+      <a href="../writing.html" class="active">Writing</a>
+    </nav>
+
+    <a href="../writing.html" class="back-link">Writing</a>
+
+    <div class="post-header">
+      <h1>Ridge Regression Is (Sort Of) Doing PCA</h1>
+      <p class="post-meta">From a Cambridge Math Part II supervision question</p>
+    </div>
+
+    <p>This post started with a supervision question. (Cambridge Math Part II Math for ML Examples Sheet 1).</p>
+
+    <p>Working through the variance of Ridge predictions, I came across the standard result that</p>
+
+    $$ \text{Var}(\hat{h}^\lambda(x) \mid X_{1:n}) = \sigma^2 \sum_{j=1}^{d} \frac{d_j \, v_j^2}{(d_j + \lambda)^2} $$
+
+    <p>where the $d_j$ are eigenvalues of $\Phi^\top \Phi$ and $v = U^\top \varphi(x)$ rotates your feature vector into the eigenbasis.</p>
+
+    <p>In order to prove this, you show each summand is strictly decreasing in $\lambda$ (take the derivative, get $-2d_j v_j^2/(d_j+\lambda)^3 &lt; 0$).</p>
+
+    <p>But thinking about this expression afterwards, I thought something about it seemed familiar.</p>
+
+    <p>Those eigenvalues $d_j$ are doing two things. They're the eigenvalues of the Gram matrix $\Phi^\top \Phi$, which means they're also the squared singular values of $\Phi$, which means they're the <strong>principal component variances</strong> of the design matrix.</p>
+
+    <p>The Ridge penalty shrinks coefficients <em>along the principal component directions</em> (with shrinkage inversely proportional to how much variance each component explains).</p>
+
+    <p>This is the connection between Ridge and PCA which was unintuitive to me at least.</p>
+
+    <hr>
+
+    <h2>Wait why should these be related?</h2>
+
+    <p>This is the part I found unintuitive.</p>
+    <ul>
+      <li>PCA is unsupervised: it stares at $X$, finds directions of maximum variance, never touches $y$.</li>
+      <li>Ridge is supervised. It <em>needs</em> $y$. The penalty term $\lambda \|\beta\|_2^2$ is about the coefficients, not the geometry of the features.</li>
+    </ul>
+
+    <p>So why does a supervised method end up organising its work around a coordinate system defined by an unsupervised decomposition?</p>
+
+    <p>It comes down to the fact that Ridge's penalty is isotropic.</p>
+    <ul>
+      <li>It penalises $\|\beta\|_2^2$, every direction treated the same — but the data aren't.</li>
+      <li>$X$ has directions where it varies a lot and directions where it's nearly constant.</li>
+      <li>An isotropic penalty applied to anisotropic data produces anisotropic shrinkage, and the axes of that anisotropy are the principal components.</li>
+      <li>$X^\top X$ appears in both the Ridge normal equations and the PCA eigendecomposition.</li>
+    </ul>
+
+    <p>The labels $y$ still matter:</p>
+    <ul>
+      <li>They determine the <em>size</em> of each component's coefficient.</li>
+      <li>But the <em>pattern</em> of shrinkage — which components get crushed and which survive — is entirely determined by the unsupervised structure of $X$.</li>
+      <li>PCA is baked into the problem.</li>
+    </ul>
+
+    <p>One would think a method that uses labels and a method that ignores them would have nothing structural in common.</p>
+
+    <p>But the penalty term forces the estimator into a coordinate system that the labels never defined, but instead comes purely from the geometry of the features.</p>
+    <ul>
+      <li>$y$ picks the coefficients</li>
+      <li>$X$ picks the axes and the shrinkage schedule.</li>
+    </ul>
+
+    <p>I think that division of labour is underappreciated.</p>
+
+    <hr>
+
+    <h2>Start With the SVD</h2>
+
+    <p>We can see this by writing the design matrix $X$ in its singular value decomposition:</p>
+
+    $$ X = U D V^\top $$
+
+    <p>where $U$ is $n \times p$ with orthonormal columns, $D = \text{diag}(d_1, \ldots, d_p)$ contains the singular values, and $V$ is $p \times p$ orthogonal.</p>
+
+    <p>The columns of $V$ are the principal component directions, and the singular values $d_j$ tell you how much variance each component captures.</p>
+
+    <p>The OLS estimator is:</p>
+
+    $$ \hat{\beta}^{\text{OLS}} = (X^\top X)^{-1} X^\top y = V D^{-1} U^\top y $$
+
+    <p>Now consider what Ridge does. The Ridge estimator at penalty $\lambda$ is:</p>
+
+    $$ \hat{\beta}^{\text{Ridge}} = (X^\top X + \lambda I)^{-1} X^\top y = V (D^2 + \lambda I)^{-1} D \, U^\top y $$
+
+    <p>To see the structure, rewrite both estimators in the principal component basis.</p>
+
+    <p>Now rotate into the PC coordinate system. Define $\theta = V^\top \beta$, the coefficients in the rotated coordinate system aligned with the principal components.</p>
+
+    <p>Then:</p>
+
+    $$ \hat{\theta}_j^{\text{OLS}} = \frac{d_j \, u_j^\top y}{d_j^2} = \frac{u_j^\top y}{d_j} $$
+
+    $$ \hat{\theta}_j^{\text{Ridge}} = \frac{d_j}{d_j^2 + \lambda} \, u_j^\top y $$
+
+    <p>The ratio between the Ridge and OLS estimates for the $j$-th principal component is:</p>
+
+    $$ \frac{\hat{\theta}_j^{\text{Ridge}}}{\hat{\theta}_j^{\text{OLS}}} = \frac{d_j^2}{d_j^2 + \lambda} $$
+
+    <p>Ridge regression shrinks each principal component's contribution by a factor of $d_j^2 / (d_j^2 + \lambda)$.</p>
+    <ul>
+      <li>Components with large singular values (high-variance directions) barely get touched.</li>
+      <li>Components with small singular values (low-variance directions) get crushed toward zero.</li>
+    </ul>
+
+    <hr>
+
+    <h2>PCA Regression Is Just the Limiting Case</h2>
+
+    <p>Now consider what happens if, instead of Ridge, you do <em>Principal Component Regression</em> (PCR): keep only the top $k$ principal components and run OLS in that subspace.</p>
+
+    <p>The shrinkage factor for PCR is:</p>
+
+    $$ \frac{\hat{\theta}_j^{\text{PCR}}}{\hat{\theta}_j^{\text{OLS}}} = \begin{cases} 1 & \text{if } j \leq k \\ 0 & \text{if } j > k \end{cases} $$
+
+    <p>This is a hard threshold. You either keep a component completely or kill it entirely.</p>
+
+    <p>Ridge, by contrast, is a continuous relaxation of PCR as it applies a <em>smooth</em> shrinkage.</p>
+    <ul>
+      <li>It's doing the same thing PCA regression does (downweighting low-variance directions) but continuously rather than discretely.</li>
+      <li>They live in the same coordinate system and do the same kind of thing; they just disagree about whether the transition from "keep" to "drop" should be smooth or abrupt.</li>
+    </ul>
+
+    <hr>
+
+    <h2>Why do we care in practice</h2>
+
+    <p>A few practical considerations follow from this:</p>
+
+    <ol>
+      <li>
+        <strong>Ridge is more stable under tuning than PCR.</strong>
+        <ul>
+          <li>Nudge $\lambda$ and the shrinkage factors move continuously.</li>
+          <li>Nudge $k$ by 1 in PCR and you've suddenly included or excluded an entire direction (gets noisy when adjacent singular values are similar).</li>
+        </ul>
+      </li>
+      <li>
+        <strong>Ridge can also win when signal hides in low-variance directions.</strong>
+        <ul>
+          <li>PCA ranks components by variance in $X$, which has nothing to do with predictive relevance for $y$.</li>
+          <li>If the outcome loads on a small component (not unusual in economics when you have many correlated features) PCR drops it entirely.</li>
+          <li>Ridge shrinks it but keeps it alive.</li>
+        </ul>
+      </li>
+      <li>
+        <strong>The effective degrees of freedom make the connection explicit:</strong>
+        $$ \text{df}(\lambda) = \sum_{j=1}^{p} \frac{d_j^2}{d_j^2 + \lambda} $$
+        <ul>
+          <li>which is just the sum of the shrinkage factors.</li>
+          <li>For PCR, $\text{df} = k$.</li>
+          <li>Ridge smoothly dials model complexity between $p$ and $0$.</li>
+        </ul>
+      </li>
+    </ol>
+
+    <hr>
+
+    <h2>The Bayesian Angle</h2>
+
+    <p>There's also a satisfying Bayesian interpretation.</p>
+
+    <p>Ridge corresponds to a Gaussian prior $\beta \sim \mathcal{N}(0, \tau^2 I)$ on the coefficients, where $\lambda = \sigma^2 / \tau^2$.</p>
+    <ul>
+      <li>This prior is isotropic (treats all directions equally).</li>
+    </ul>
+
+    <p>But in the principal component basis, the <em>likelihood</em> is not isotropic.</p>
+    <ul>
+      <li>High-variance directions in $X$ carry more Fisher information than low-variance ones (large $d_j$)</li>
+      <li>Data is less informative about low-variance directions (small $d_j$)</li>
+    </ul>
+
+    <p>The posterior combines isotropic prior with anisotropic likelihood, and the result is exactly the differential shrinkage we derived: Components where the data speak loudly ($d_j^2 \gg \lambda$) are barely regularised; components where the prior dominates ($d_j^2 \ll \lambda$) get pulled to zero.</p>
+
+    <p>If you instead put a prior that's <em>aligned with the principal components</em> (say $\theta_j \sim \mathcal{N}(0, d_j^2 \tau^2)$, giving more prior variance to high-variance directions) you'd get different shrinkage.</p>
+
+    <p>The point is that Ridge's implicit inductive bias is to shrink along principal components, weighted by inverse variance.</p>
+
+    <hr>
+
+    <h2>So What?</h2>
+
+    <p>This result might be completely trivial/obvious to many of you, but it has changed how I think about both methods.</p>
+
+    <ul>
+      <li>More than just "OLS with a penalty", Ridge is smooth, variance-aware dimensionality reduction that operates in the same coordinate system as PCA.</li>
+      <li>PCA regression isn't just "reduce dimensions, then regress." It's the hard-thresholding limit of a continuum of shrinkage estimators.</li>
+    </ul>
+
+    <p>In choosing between Ridge and PCR, what you're doing isn't choosing between fundamentally different philosophies. You are choosing between a smooth curve and a step function over the same set of principal components.</p>
+
+    <hr>
+
+    <h2>Appendix: Three nice pieces of intuition</h2>
+
+    <ol>
+      <li>
+        <strong>Spectral Link:</strong> If you think of OLS as an operator $X^\dagger$, Ridge is a <strong>spectral regularization</strong> of that operator.
+        <ul>
+          <li>In functional analysis, this is similar to Tikhonov regularization.</li>
+          <li>You are essentially replacing the singular values $\frac{1}{d_j}$ with a "damped" version $\frac{d_j}{d_j^2 + \lambda}$ to prevent the operator from blowing up when $d_j$ is near zero.</li>
+        </ul>
+      </li>
+      <li>
+        <strong>The Rotational Invariance:</strong> The Ridge penalty $\|\beta\|_2^2$ is isotropic.
+        <ul>
+          <li>A key property of the $L_2$ norm is that it is <strong>rotationally invariant</strong>.</li>
+          <li>Because the penalty doesn't care about the coordinate system, the data ($X$) is free to dictate the "natural" coordinate system via its own covariance structure.</li>
+          <li>This is why the PCA basis (the SVD) emerges so naturally from the math.</li>
+        </ul>
+      </li>
+      <li>
+        <strong>Signal-to-Noise Intuition:</strong>
+        <ul>
+          <li>In the variance formula $\text{Var} \propto \frac{d_j}{(d_j^2 + \lambda)^2}$, you can see that Ridge specifically protects you where OLS is most vulnerable.</li>
+          <li>In OLS, as $d_j \to 0$, the variance explodes like $1/d_j^2$. Ridge caps this explosion.</li>
+        </ul>
+      </li>
+    </ol>
+  </div>
+</body>
+</html>
+

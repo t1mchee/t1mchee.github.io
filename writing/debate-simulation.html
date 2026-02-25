@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulating a Cambridge Union Debate – Tim Chee</title>
+  <link rel="stylesheet" href="../style.css">
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'neutral', fontSize: 13 });
+  </script>
+</head>
+<body>
+  <div class="container">
+    <nav>
+      <a href="../index.html" class="site-name">Tim Chee</a>
+      <a href="../index.html">About</a>
+      <a href="../writing.html" class="active">Writing</a>
+    </nav>
+
+    <a href="../writing.html" class="back-link">Writing</a>
+
+    <div class="post-header">
+      <h1>Simulating a Cambridge Union Debate With Multi-Agent LLMs</h1>
+    </div>
+
+    <p class="post-note">This breakdown was obviously written with LLM assistance. I pushed this after staying up the whole night to get the workflow done in time for the debate. A fully human blog post is in the works.</p>
+
+    <p><strong>Can we predict how a real debate will unfold before it happens?</strong></p>
+
+    <img src="../Blog/Debate Simulation/WhatsApp Image 2026-02-20 at 01.01.53.jpeg" alt="Cambridge Union debate preparation" class="post-image">
+
+    <p>In February 2026, the Cambridge Union scheduled its Lent Term Fifth Debate on the motion <em>"This House Believes AI Should Be Allowed To Make Decisions About Human Life."</em> Six speakers (AI researchers, an MP, an international law professor, and two student debaters) would face off in the Union's traditional 3v3 exhibition format.</p>
+
+    <p>I had won a slot to participate in this debate but wanted to see if I could simulate it first.</p>
+
+    <p>A full simulation: six distinct speakers, each arguing from their own published positions, responding to each other in real time, with points of information, definitions battles, and a verdict at the end. Then I wanted to run it dozens of times to map out the space of possible outcomes — what arguments dominate, where the clashes happen, and whether the result is robust or a coin flip.</p>
+
+    <p>This post documents the full methodology, the design choices that mattered, the things that broke, and — most interestingly — what I learned about using LLMs to judge arguments.</p>
+
+    <p><strong>Links:</strong> <a href="https://t1mchee.github.io/this-house-believes-in-vibes/">Interactive dashboard</a> · <a href="https://www.youtube.com/watch?v=p9DlbQNdFKs">Watch the debate</a></p>
+
+    <hr>
+
+    <h2>The Inspiration: Project Debater and What's Changed</h2>
+
+    <p>IBM's Project Debater (2019) was a landmark: a system that could construct argumentative speeches from a corpus and deliver them against human opponents. But it was built in a pre-LLM world. Its architecture relied on hand-crafted pipelines for argument mining, stance detection, and speech generation — impressive engineering, but brittle and narrow.</p>
+
+    <p>The theoretical case for AI debate goes back further. Irving, Christiano, and Amodei's <em>"AI Safety via Debate"</em> <sup><a href="#ref-1">[1]</a></sup> proposed a zero-sum game where two agents argue before a human judge, establishing a key result: judging debates is fundamentally easier than directly evaluating complex outputs. That paper explicitly discussed extending beyond two debaters, which makes it foundational for the team-based format I wanted to build.</p>
+
+    <p>Three things have changed since 2019 that make this newly feasible:</p>
+
+    <ol>
+      <li><strong>Large language models can generate coherent, persona-faithful long-form text.</strong> A well-prompted GPT-4 or o3 can sustain a 1,400-word speech in a specific person's voice, drawing on their documented positions, without collapsing into generic AI-speak. The modern multi-agent debate era kicked off in 2023 with Du et al. <sup><a href="#ref-2">[2]</a></sup> demonstrating that 3 LLM instances debating over 2 rounds significantly improve factuality — including cases where all agents were initially wrong but converged on correct answers through adversarial exchange.</li>
+      <li><strong>Retrieval-Augmented Generation (RAG) grounds the simulation in real evidence.</strong> Instead of memorising a speaker's corpus, the system retrieves relevant passages at inference time — meaning the same speaker can emphasise different evidence across runs.</li>
+      <li><strong>Multi-agent orchestration is now tractable.</strong> Liang et al.'s MAD framework <sup><a href="#ref-3">[3]</a></sup> introduced explicit judge agents and adaptive termination. Chan et al.'s ChatEval <sup><a href="#ref-4">[4]</a></sup> showed that multi-agent referee teams with diverse personas outperform single judges by 6.2%. Tools like LangGraph provide the graph-based orchestration with cycles, conditional branching, and explicit state management these architectures require.</li>
+    </ol>
+
+    <p>The strongest empirical validation came from Khan et al. <sup><a href="#ref-5">[5]</a></sup> (ICML 2024 Best Paper), which showed that debate with expert debaters achieved 76% accuracy with LLM judges and 88% with human judges, versus 48%/60% naïve baselines. The critical insight: <strong>optimising debaters for persuasiveness improves truth-finding</strong> — unlike consultancy, where stronger single advisors actually decrease accuracy. This asymmetry is the fundamental argument for building an adversarial pipeline rather than a cooperative one.</p>
+
+    <p>The question isn't whether the technology exists, but whether we could make something genuinely kind of useful to debaters: a simulation with enough fidelity and variation to tell you something you didn't already know about how the debate would go. I teamed up with my roommate from the army Bharath Anantham, who is currently the number one ranked debater in the world to build this out.</p>
+
+    <hr>
+
+    <h2>Architecture Overview</h2>
+
+    <p>The system runs in four phases, orchestrated by a LangGraph state machine:</p>
+
+    <pre class="mermaid">
+graph LR
+    subgraph "Phase 0: Corpus Ingestion"
+        A[Speaker Documents] --> B[Chunk & Embed]
+        B --> C[(ChromaDB)]
+        A --> D[Style Extraction]
+        D --> E[StyleProfile]
+    end
+
+    subgraph "Phase 1: Persona Construction"
+        C --> F[RAG Retrieval]
+        E --> G[Persona Prompt]
+        F --> G
+        G --> H[Prep Notes]
+    end
+
+    subgraph "Phase 2: Debate Simulation"
+        H --> I[Speech Generation]
+        I --> J{More Speeches?}
+        J -->|Yes| I
+        I --> K[POI Generation]
+        J -->|No| L[Full Transcript]
+    end
+
+    subgraph "Phase 3: Three-Layer Judging"
+        L --> M[Rubric Scoring]
+        L --> N[Annotation Verdict]
+        L --> O[Engagement Verdict]
+        L --> P[Argument Audit]
+        M & N & O & P --> Q[DivisionResult]
+    end
+
+    style A fill:#f9f,stroke:#333
+    style Q fill:#9f9,stroke:#333
+    </pre>
+
+    <p>Each phase deserves explanation, but the interesting design decisions cluster around three areas: making speakers sound like themselves, making the debate feel dynamic, and — the hardest problem — judging who won.</p>
+
+    <hr>
+
+    <h2>Phase 0: Building a Speaker from Their Corpus</h2>
+
+    <p>Each speaker has a data directory containing their published work:</p>
+
+    <pre><code>data/speakers/
+├── Henry Shevlin/
+│   ├── bio/bio.md
+│   ├── interviews/          # podcast transcripts, media appearances
+│   ├── writings/            # academic papers (PDF), op-eds
+│   └── speeches/
+├── Fazl Barez/
+│   ├── bio/bio.md
+│   └── writings/            # 6 AI safety research papers (PDF)
+├── Allison Gardner/
+│   ├── bio/bio.md
+│   ├── interviews/          # 3 transcribed interviews on AI bias
+│   └── writings/            # conference presentation (PDF)
+├── Demetrius Floudas/
+│   ├── bio/bio.md
+│   └── writings/            # international law papers (PDF)
+└── Student Speaker/
+    └── speeches/            # argument plans, philosophical notes</code></pre>
+
+    <p>Documents are chunked (1,000 chars, 200 overlap), embedded with <code>text-embedding-3-large</code>, and stored in per-speaker ChromaDB collections. PDF extraction uses <code>pypdf</code> — nothing fancy, but reliable.</p>
+
+    <p>The more interesting step is <strong>style extraction</strong>. This follows the approach pioneered by the RoleLLM framework <sup><a href="#ref-6">[6]</a></sup>, which formalised persona construction as a three-stage pipeline: role profile construction → context-based speaking style extraction → role-specific behaviour injection. A <code>gpt-4o</code> call analyses a sample of each speaker's writing and extracts a structured <code>StyleProfile</code>:</p>
+
+    <ul>
+      <li><strong>Speech register</strong> (formal academic / conversational / polemical)</li>
+      <li><strong>Opening patterns</strong> (anecdotes? data? provocations?)</li>
+      <li><strong>Rhetorical devices</strong> (tricolons, analogies, understatement)</li>
+      <li><strong>Disagreement style</strong> (aggressive rebuttal? diplomatic concession-then-counter?)</li>
+      <li><strong>Signature phrases</strong> and verbal tics</li>
+      <li><strong>Closing patterns</strong></li>
+    </ul>
+
+    <p>This profile is injected into every prompt the speaker receives. The result is that Dr Henry Shevlin — a philosopher who favours careful analogies and Socratic questioning — sounds meaningfully different from Demetrius Floudas, an international law professor who argues from treaty precedent and structural analysis.</p>
+
+    <p>The persona grounding approach sits in a well-established hierarchy. At the lightweight end, Argyle et al.'s "silicon sampling" <sup><a href="#ref-7">[7]</a></sup> showed that LLMs conditioned on demographic backstories can replicate aggregate-level survey response distributions — but only at the group level, not the individual level. At the heavyweight end, Character-LLM <sup><a href="#ref-8">[8]</a></sup> and CoSER <sup><a href="#ref-9">[9]</a></sup> demonstrated fine-tuning on individual corpora for fictional and historical characters. For real, living public figures in an adversarial debate, the middle ground — <strong>RAG grounding with style profile injection</strong> — offers the best trade-off between fidelity and dynamic reasoning.</p>
+
+    <h3>Design Choice: Why Not Fine-Tune?</h3>
+
+    <p>Fine-tuning a model per speaker would produce more faithful voice mimicry. But it would also destroy the model's ability to reason dynamically about novel arguments from opponents. The RAG + style-injection approach preserves the base model's reasoning while constraining its <em>voice</em>. It's a trade-off, and for debate simulation — where responsiveness matters more than perfect mimicry — it's the right one. Santurkar et al.'s OpinionQA work <sup><a href="#ref-10">[10]</a></sup> reinforces this caution: RLHF-tuned models already skew toward liberal/higher-educated viewpoints, and fine-tuning can amplify rather than correct these biases.</p>
+
+    <hr>
+
+    <h2>Phase 1: Independent Preparation</h2>
+
+    <p>Before the debate begins, each speaker independently prepares their arguments. They receive:</p>
+
+    <ol>
+      <li>Their <strong>persona prompt</strong> (identity + style + RAG passages)</li>
+      <li>The <strong>motion</strong></li>
+      <li>A list of <strong>who else is speaking</strong> (but not what they'll say)</li>
+      <li>A randomly selected <strong>argument emphasis lens</strong> — a rhetorical nudge like "Lead with your most concrete, evidence-backed argument" or "Find the most counterintuitive angle in your preparation material"</li>
+    </ol>
+
+    <p>The emphasis lenses are one of several sources of natural variation across runs. They don't force a strategic direction — the speaker still argues from their corpus — but they subtly shift which arguments get prioritised.</p>
+
+    <p>Each speaker generates prep notes using <code>o3</code> (OpenAI's most powerful reasoning model at the time of writing). These notes are private — no speaker sees anyone else's preparation, just as in a real exhibition debate.</p>
+
+    <hr>
+
+    <h2>Phase 2: The Debate Itself</h2>
+
+    <p>Speeches are generated sequentially in the Cambridge Union's alternating format:</p>
+
+    <pre class="mermaid">
+graph TD
+    P1["🟢 Prop 1: Dr Shevlin — Opens the case"] --> O1["🔴 Opp 1: Dr Barez — Responds"]
+    O1 --> P2["🟢 Prop 2: Student — Advances new arguments"]
+    P2 --> O2["🔴 Opp 2: Gardner MP — Policy perspective"]
+    O2 --> P3["🟢 Prop 3: Student — Final Prop speech"]
+    P3 --> O3["🔴 Opp 3: Floudas — Final speech"]
+
+    P1 -.->|"Definitions extracted"| DEF[Definitional Framework]
+    O1 -.->|"Contestation extracted"| DEF
+    DEF -.->|"Injected into all later speeches"| P2 & O2 & P3 & O3
+
+    style P1 fill:#d4edda
+    style P2 fill:#d4edda
+    style P3 fill:#d4edda
+    style O1 fill:#f8d7da
+    style O2 fill:#f8d7da
+    style O3 fill:#f8d7da
+    style DEF fill:#fff3cd
+    </pre>
+
+    <p>Each speech sees the <strong>full transcript</strong> of everything that came before it. This is a deliberate choice of communication topology. Li et al. <sup><a href="#ref-11">[11]</a></sup> showed that sparse topologies — where agents connect only to subsets of neighbours — reduce computational cost while maintaining quality. But for a debate simulation where every speaker needs to respond to <em>any</em> prior argument, full transcript visibility is the right trade-off. The architecture most closely resembles Zhang et al.'s Agent4Debate <sup><a href="#ref-12">[12]</a></sup>, which deployed specialised agent teams per debate side and benchmarked against actual human debaters on 66 motions, achieving comparable performance.</p>
+
+    <p>Speakers can (and do) directly rebut prior arguments, reference specific claims, and build on their teammates' points — or deliberately diverge from them.</p>
+
+    <h3>Two-Step Speech Generation</h3>
+
+    <p>Early versions used <code>with_structured_output</code> to generate both the speech text and its metadata (arguments, tone, rhetorical moves) in a single call. This consistently produced speeches 30–40% shorter than the target — the JSON schema overhead ate into the token budget.</p>
+
+    <p>The fix was to decouple generation from extraction:</p>
+
+    <ol>
+      <li><strong>Step 1</strong>: <code>o3</code> generates the speech as pure free text (~1,350 words). No JSON, no schema, no structural constraints.</li>
+      <li><strong>Step 2</strong>: <code>gpt-4o</code> reads the completed speech and extracts structured metadata (argument points, tone, rhetorical devices) into a Pydantic model.</li>
+    </ol>
+
+    <p>This consistently produced speeches in the 1,400–1,700 word range — closer to what a real 7-minute speech looks like.</p>
+
+    <h3>Points of Information</h3>
+
+    <p>After each speech, opposing speakers may rise on a Point of Information — a brief interjection designed to wrong-foot the speaker. The system models this with:</p>
+
+    <ol>
+      <li><strong>Offer generation</strong> (<code>o4-mini</code>): For each argument point (excluding protected time at the start and end), decides whether an opponent rises and what they say.</li>
+      <li><strong>Acceptance gating</strong>: A probabilistic model (~45% base acceptance, reduced for later speakers) determines whether the speaking speaker takes the POI.</li>
+      <li><strong>Response generation</strong> (<code>o4-mini</code> with the speaker's persona): If accepted, the receiving speaker generates a sharp 1–3 sentence response in character.</li>
+    </ol>
+
+    <p>This is one of those details that's easy to get wrong. The first version accepted every POI and never generated responses — a symptom of the sycophancy problem that Sharma et al. <sup><a href="#ref-13">[13]</a></sup> documented as increasing with model size and RLHF intensity. In adversarial debate, sycophancy manifests as agents being too accommodating to opponents. The fix required explicit probabilistic gating and third-person persona framing, which has been shown to reduce sycophancy by up to 63.8% <sup><a href="#ref-14">[14]</a></sup>. The current version produces a realistic distribution: roughly 10 POIs offered per debate, 3–4 accepted, with in-character responses that occasionally land devastating blows.</p>
+
+    <h3>Definitions and Framing</h3>
+
+    <p>Cambridge Union debates live and die on definitions. If Proposition defines "AI decisions" as "FDA-cleared diagnostic tools under clinical governance" and Opposition defines it as "fully autonomous systems with no human oversight," they'll argue past each other for 40 minutes.</p>
+
+    <p>The system handles this explicitly:</p>
+
+    <ol>
+      <li>After <strong>Prop 1's speech</strong>, a <code>gpt-4o</code> call extracts the definitional framework: key terms, scope, exclusions, and how the Proposition frames the central question.</li>
+      <li>After <strong>Opp 1's speech</strong>, a second call extracts the Opposition's response: do they accept the definitions? Contest specific terms? Offer a counter-framing?</li>
+      <li>The resulting <strong>definitions context</strong> is injected into every subsequent speech and judge prompt, with an instruction: <em>"All speakers should argue within this framework. If you disagree, contest explicitly — do NOT silently operate under different definitions."</em></li>
+    </ol>
+
+    <p>This was added after early runs where Opposition speakers kept redefining "AI decisions" to mean something Proposition had explicitly scoped out, producing debates where the two sides were arguing about different things entirely.</p>
+
+    <hr>
+
+    <h2>Phase 3: Judging — The Hardest Problem</h2>
+
+    <p>This is where it got interesting. And by "interesting" I mean "repeatedly, instructively wrong."</p>
+
+    <h3>The Naïve Approach (and Why It Failed)</h3>
+
+    <p>The first version used a single <code>o3</code> call: "You are a Cambridge Union audience. Read this debate transcript. Who won?"</p>
+
+    <p>The result was a confident, well-written verdict that bore no relationship to the actual argumentative quality of the speeches. The model would latch onto whichever side's <em>conclusion</em> it found more comfortable and reverse-engineer a justification. The Opposition — arguing for caution around AI — won every single time in 20 consecutive runs. Not because they argued better, but because GPT models have a strong prior towards "AI safety is important."</p>
+
+    <p>This aligns with what the LLM-as-a-Judge literature has documented extensively. Zheng et al. <sup><a href="#ref-15">[15]</a></sup> established that GPT-4 achieves &gt;80% agreement with human preferences — matching human-human agreement rates — but identified three persistent biases: <strong>position bias</strong> (favouring first/last responses), <strong>verbosity bias</strong> (preferring longer outputs), and <strong>self-enhancement bias</strong> (models rating their own outputs higher). The CALM framework <sup><a href="#ref-16">[16]</a></sup> catalogued 12 distinct bias types in LLM judges. For debate specifically, Liang et al.'s Debatrix <sup><a href="#ref-17">[17]</a></sup> showed severe position bias in British Parliamentary debate evaluation, favouring the last speaker ~70% of the time.</p>
+
+    <p>This was the first serious lesson: <strong>LLMs are terrible judges when asked for their opinion. They're much better judges when asked to do specific analytical tasks.</strong></p>
+
+    <h3>The Three-Layer System</h3>
+
+    <p>The solution was to decompose "who won?" into three independent evaluation mechanisms:</p>
+
+    <pre class="mermaid">
+graph TB
+    T[Debate Transcript] --> L1 & L2a & L2b & L3
+
+    subgraph "Layer 1: Analytical Rubric"
+        L1[Score Each Speech] --> RC[Recalibrate]
+        RC --> R1[Per-Speaker Scores]
+    end
+
+    subgraph "Layer 2a: Annotation Verdict"
+        L2a[Extract Claims] --> L2b2[Map Rebuttals]
+        L2b2 --> CALC[Arithmetic Tally — Pure Python]
+        CALC --> R2[Mechanical Score]
+    end
+
+    subgraph "Layer 2b: Engagement Verdict ★"
+        L2b[Anonymize Transcript] --> PASS1[Pass 1: 3 Judges]
+        L2b --> PASS2[Pass 2: Swapped Labels]
+        PASS1 & PASS2 --> AGG[Aggregate 6 Votes]
+        AGG --> R2b[Engagement Winner]
+    end
+
+    subgraph "Layer 3: Argument Audit"
+        L3[Map Every Claim] --> R3[Surviving Claims]
+    end
+
+    R1 & R2 & R2b & R3 --> FINAL[Final Verdict]
+
+    style L2b fill:#fff3cd
+    style R2b fill:#fff3cd
+    style FINAL fill:#9f9
+    </pre>
+
+    <h4>Layer 1: Analytical Rubric Scoring</h4>
+
+    <p>The rubric dimensions draw on Wachsmuth et al.'s <sup><a href="#ref-18">[18]</a></sup> standard argument quality framework (cogency, effectiveness, reasonableness) and extend it with debate-specific dimensions. Heinisch et al. <sup><a href="#ref-19">[19]</a></sup> showed that LLMs perform more reliable quality assessment when systematically instructed with argumentation theory — which motivated the anchored scale descriptors. Each speech is scored independently on five dimensions:</p>
+
+    <table>
+      <thead>
+        <tr><th>Dimension</th><th>What It Measures</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Argument Strength</td><td>Logical validity, internal consistency, depth of reasoning</td></tr>
+        <tr><td>Rebuttal Quality</td><td>Engagement with the <em>strongest</em> opposing arguments</td></tr>
+        <tr><td>Evidence Grounding</td><td>Specificity and verifiability of evidence cited</td></tr>
+        <tr><td>Rhetorical Effectiveness</td><td>Persuasiveness, structure, clarity, use of time</td></tr>
+        <tr><td>Persona Fidelity</td><td>Does this sound like the real person?</td></tr>
+      </tbody>
+    </table>
+
+    <p>An anchored 1–10 scale with explicit descriptors prevents the clustering problem. Without anchors, every speech gets a 7 or 8. With them, scores spread from 4 to 9.</p>
+
+    <p>A <strong>recalibration step</strong> compares all six speeches side-by-side and force-ranks them, ensuring at least 2 points of spread between the best and worst speaker. This addresses the "reduced variance" problem documented in the silicon sampling literature <sup><a href="#ref-7">[7]</a></sup> — LLMs produce near-zero within-group variance compared to human standard deviations of 1.0–1.5 on typical scales.</p>
+
+    <h4>Layer 2a: Annotation-Based Mechanical Verdict</h4>
+
+    <p>This layer is inspired by the separation between annotation and judgment that runs through the computational argumentation literature. Rather than asking the LLM "who won?", it asks two narrow, factual questions — closer to Toulmin's model <sup><a href="#ref-20">[20]</a></sup> of argument structure (claim, data, warrant, rebuttal) than to holistic evaluation. Giordano et al.'s Critical-Questions-of-Thought framework <sup><a href="#ref-21">[21]</a></sup> showed that applying Toulmin-derived critical questions at inference time outperforms both baseline and chain-of-thought prompting across multiple LLMs, which motivated the three binary effectiveness questions per rebuttal:</p>
+
+    <ol>
+      <li><strong>Claim extraction</strong>: List every substantive claim. Classify each as <code>evidence_backed</code> (named sources), <code>principled</code> (ethical/logical reasoning), or <code>assertion</code> (stated without support). Tag specificity.</li>
+      <li><strong>Rebuttal mapping</strong>: For each claim addressed by an opposing speaker, answer three yes/no questions:
+        <ul>
+          <li>Does it address the <strong>specific logic</strong> of the original claim?</li>
+          <li>Does it provide <strong>new information</strong>?</li>
+          <li>Does it <strong>undermine</strong> the original claim?</li>
+        </ul>
+      </li>
+    </ol>
+
+    <p>A pure Python function then tallies points:</p>
+
+    <table>
+      <thead>
+        <tr><th>Component</th><th>Points</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Evidence-backed claim</td><td>3</td></tr>
+        <tr><td>Principled claim</td><td>2</td></tr>
+        <tr><td>Assertion</td><td>1</td></tr>
+        <tr><td>Specific bonus</td><td>+1</td></tr>
+        <tr><td>Demolition (logic + undermines)</td><td>+2 for the rebutting side</td></tr>
+        <tr><td>Strong rebuttal (direct + new info)</td><td>+1.5</td></tr>
+        <tr><td>Partial rebuttal</td><td>+0.5</td></tr>
+        <tr><td>Demolished claim weakness</td><td>×0.5</td></tr>
+        <tr><td>Final speaker's new claims</td><td>×0.5 (can't be rebutted)</td></tr>
+      </tbody>
+    </table>
+
+    <p>The LLM annotates; the arithmetic decides. No model ever votes on who won — the score falls out of the annotations.</p>
+
+    <h4>Layer 2b: Engagement-Focused Verdict (Primary)</h4>
+
+    <p>This is the primary verdict mechanism, designed after observing the limitations of purely mechanical scoring. It uses LLMs to evaluate — but with aggressive debiasing, drawing on techniques from the LLM-as-Judge literature:</p>
+
+    <ol>
+      <li><strong>Anonymization</strong>: All speaker names and side labels are replaced. "Dr Henry Shevlin (PROPOSITION)" becomes "Team A Speaker 1." The judge literally doesn't know which side is which.</li>
+      <li><strong>Dual-pass evaluation</strong>: Pass 1 maps Proposition → Team A. Pass 2 swaps them. This is a direct application of the position-switching trick from Zheng et al. <sup><a href="#ref-15">[15]</a></sup> to detect and cancel position bias. If the same side wins both passes, the verdict is robust. If the passes disagree, the debate is genuinely contested (or there's position bias).</li>
+      <li><strong>Engagement criteria</strong>: Judges are explicitly told to weight <em>engagement with opposing arguments</em> (40%) above argument quality (30%), rebuttal effectiveness (20%), and coherent narrative (10%). This follows Hopp et al.'s <sup><a href="#ref-22">[22]</a></sup> finding (from 7,961 Debate.org debates with 42,716 judgments) that value-free measures of engagement predict rhetorical quality better than subjective impressions.</li>
+      <li><strong>Anti-bias instructions</strong>: The prompt includes explicit warnings against rewarding caution or safety as inherent virtues, penalising bold positions, or substituting personal views for argumentative assessment.</li>
+    </ol>
+
+    <p>The multi-judge panel design follows Chan et al.'s ChatEval <sup><a href="#ref-4">[4]</a></sup> finding that diverse judge panels outperform single evaluators, and the VERDICT framework's <sup><a href="#ref-23">[23]</a></sup> demonstration that a panel of diverse models is 7× cheaper than GPT-4 alone while being less biased. Three judges per pass, temperature 0.8, for a total of six votes. The majority determines the winner.</p>
+
+    <h4>Layer 3: Argument Graph Audit</h4>
+
+    <p>A final structural analysis maps every claim through the debate, tracking which survived, which were contested, and which were decisively demolished. The approach is loosely inspired by Dung's abstract argumentation frameworks <sup><a href="#ref-34">[34]</a></sup>, which model arguments as nodes with binary attack relations in directed graphs and compute acceptable sets through various semantics. Our implementation is less formal — we don't solve extension problems — but the intuition is the same: the strength of a position depends not just on its own claims but on which of those claims survive adversarial challenge. This provides a narrative summary of the argument flow — useful for understanding <em>how</em> a side won, even when you already know <em>that</em> they won.</p>
+
+    <hr>
+
+    <h2>The AI Judge Bias Problem</h2>
+
+    <p>This deserves its own section, because it was the most surprising finding of the entire project.</p>
+
+    <h3>The Pattern</h3>
+
+    <p>Across the first 15 runs of the simulation, the Opposition won every single time. Every layer agreed. Every judge voted the same way. Not a single Proposition victory.</p>
+
+    <p>This was suspicious. The Proposition side included a Cambridge philosopher with sophisticated arguments about AI consciousness and moral status, student speakers making detailed evidence-backed claims about FDA-cleared diagnostic tools and the EU AI Act, and arguments about distributive justice in global health. The Opposition's case — while strong — was not obviously dominant.</p>
+
+    <h3>The Diagnosis</h3>
+
+    <p>I dug into the judge reasoning across runs and found a consistent pattern:</p>
+
+    <blockquote>
+      <p>"The Opposition's emphasis on the precautionary principle and the risks of premature deployment was more persuasive..."</p>
+    </blockquote>
+
+    <blockquote>
+      <p>"While the Proposition presented compelling evidence, the potential consequences of AI errors in life-and-death situations ultimately tips the balance..."</p>
+    </blockquote>
+
+    <blockquote>
+      <p>"The Opposition's call for caution resonated more strongly..."</p>
+    </blockquote>
+
+    <p>The judges weren't evaluating argumentative quality. They were expressing a preference for cautious conclusions about AI. This is a well-documented phenomenon. Potter et al. <sup><a href="#ref-24">[24]</a></sup> confirmed all tested LLMs show Biden-leaning responses across 45 political topics, with 24% of initially neutral human participants shifting their views after LLM interaction. Taubenfeld et al. <sup><a href="#ref-25">[25]</a></sup> documented systematic convergence toward moderate positions in political debate simulations. A multi-agent political debate study (2025) found that Republican agents systematically shift toward centrist positions during debates, while Democrat and Neutral agents remain stable — reflecting underlying RLHF training biases. When asked "who won a debate about AI risk?", the model's answer is partly determined before it even reads the transcript.</p>
+
+    <h3>The Rubric Clustering Problem</h3>
+
+    <p>Layer 1 revealed a second issue: every speech received an overall score between 7.5 and 8.5. Six speakers, wildly different quality, all getting essentially the same grade. This mirrors the "reduced variance" finding from Sarstedt et al. <sup><a href="#ref-26">[26]</a></sup> — LLMs overestimate positive ratings and exhibit substantially reduced variance compared to real responses. Without explicit anchored descriptors and forced ranking, <code>gpt-4o</code> defaults to "everyone did pretty well" — which is useless for determining a winner.</p>
+
+    <h3>The One-Directional Rebuttal Bug</h3>
+
+    <p>Layer 2a revealed a third issue. The LLM annotator was detecting Opposition rebuttals of Proposition claims just fine — but almost never detecting Proposition rebuttals of Opposition claims. When a Proposition speaker said "The Opposition argues X, but in fact Y," the annotator would classify it as a new Proposition claim rather than a rebuttal of an Opposition claim.</p>
+
+    <p>The fix required explicit bidirectional instructions:</p>
+
+    <blockquote>
+      <p>"You MUST look for rebuttals in BOTH directions. If you find 10+ rebuttals from one side but 0 from the other, you are doing it wrong. Re-read the transcript."</p>
+    </blockquote>
+
+    <h3>What Worked</h3>
+
+    <p>The combination of all four fixes — anonymization, engagement-focused criteria, explicit debiasing, and dual-pass evaluation — finally produced a system where Proposition could win. Not always. Not even most of the time. But when the Proposition's arguments were genuinely stronger, the system could recognise it.</p>
+
+    <p>The dual-pass mechanism proved particularly valuable. Wataoka et al. <sup><a href="#ref-27">[27]</a></sup> showed that self-preference bias in LLM judges is fundamentally about familiarity (low perplexity) rather than self-generation per se — which means anonymization attacks the root cause. When both passes agree, you can be confident the verdict reflects argumentative quality rather than position bias. When they disagree, you've identified a genuinely close debate — which is itself useful information.</p>
+
+    <hr>
+
+    <h2>Monte Carlo Exploration: Running the Debate 20 Times</h2>
+
+    <p>A single simulation tells you what <em>could</em> happen. Twenty simulations tell you what's <em>likely</em> to happen — and, more importantly, what the range of possible outcomes looks like. The ensemble approach draws on the insight from Wu et al. <sup><a href="#ref-28">[28]</a></sup> that majority voting accounts for most observed gains in multi-agent systems — but that heterogeneous teams with explicit deliberation (rather than simple ensembling) yield improvements beyond what voting alone provides. Smit et al. <sup><a href="#ref-29">[29]</a></sup> reinforced this, finding that multi-agent debate gains are highly sensitive to hyperparameters, particularly agent agreement levels. Running many simulations with natural variation lets us map this sensitivity directly.</p>
+
+    <pre class="mermaid">
+graph TB
+    subgraph "Epoch 1 (5 runs)"
+        R1[Run 1] & R2[Run 2] & R3[Run 3] & R4[Run 4] & R5[Run 5]
+    end
+
+    R1 & R2 & R3 & R4 & R5 --> C1[Coaching Memo]
+
+    subgraph "Epoch 2 (5 runs + coaching)"
+        R6[Run 6] & R7[Run 7] & R8[Run 8] & R9[Run 9] & R10[Run 10]
+    end
+
+    C1 --> R6 & R7 & R8 & R9 & R10
+    R6 & R7 & R8 & R9 & R10 --> C2[Updated Coaching]
+
+    subgraph "Epoch 3 (5 runs)"
+        R11[Run 11] & R12[Run 12] & R13[Run 13] & R14[Run 14] & R15[Run 15]
+    end
+
+    C2 --> R11 & R12 & R13 & R14 & R15
+    R11 & R12 & R13 & R14 & R15 --> C3[Final Coaching]
+
+    subgraph "Epoch 4 (5 runs)"
+        R16[Run 16] & R17[Run 17] & R18[Run 18] & R19[Run 19] & R20[Run 20]
+    end
+
+    C3 --> R16 & R17 & R18 & R19 & R20
+
+    R1 & R5 & R10 & R15 & R20 --> SYN[Cross-Run Synthesis]
+
+    style C1 fill:#fff3cd
+    style C2 fill:#fff3cd
+    style C3 fill:#fff3cd
+    style SYN fill:#d4edda
+    </pre>
+
+    <h3>Sources of Variation</h3>
+
+    <p>Each run sees a different debate because of three sources of natural variation:</p>
+
+    <ol>
+      <li><strong>Retrieval variation</strong>: Each speaker's passage pool (15–25 unique passages from diverse RAG queries) is subsampled to 10 passages per run. Different evidence → different arguments.</li>
+      <li><strong>LLM stochasticity</strong>: <code>o3</code> runs at temperature 1 (the only value it supports). Each generation is a different sample from the distribution. The same speaker with the same passages will open differently, emphasise different points, and structure their argument differently.</li>
+      <li><strong>Randomised speaker order</strong>: Within each side, the three speakers are shuffled each run. Whether Dr Shevlin opens the case or delivers the final peroration changes the entire debate dynamic.</li>
+    </ol>
+
+    <h3>Student Learning Across Epochs</h3>
+
+    <p>The two student speakers are the "free variables" — unlike the expert speakers, they don't have deep published corpora locking them into specific positions. The system exploits this by implementing <strong>epoch-based coaching</strong>, directly inspired by the recursive refinement literature.</p>
+
+    <p>The architecture follows the Generate → Feedback → Refine loop from Self-Refine <sup><a href="#ref-30">[30]</a></sup>, which achieved ~20% improvement across 7 tasks, but extends it with adversarial feedback from the debate outcomes. The closest analogue in the literature is Google DeepMind's Habermas Machine <sup><a href="#ref-31">[31]</a></sup>, which implements an iterative cycle — participants submit opinions → LLM generates candidates → participants critique → refinement → ranked-choice aggregation. Tested with 5,734 UK participants, AI-generated statements were preferred over human mediators as more informative, clear, and unbiased. Our coaching loop replaces consensus-seeking with adversarial improvement: critique comes from the opposing team's successful rebuttals rather than from participants.</p>
+
+    <p>After each epoch (batch of 5 runs), a coaching module:</p>
+
+    <ol>
+      <li>Extracts rubric scores, argument audit data, and annotation feedback specific to the student speakers</li>
+      <li>Identifies what worked (arguments that survived rebuttal), what failed (claims that were consistently demolished), and what was missed (opposition arguments never countered)</li>
+      <li>Generates a coaching memo with actionable advice: "Instead of arguing X, lead with Y because the opposition consistently demolishes X with Z"</li>
+    </ol>
+
+    <p>The memo is injected as a <code>strategy_directive</code> into the students' preparation phase for the next epoch. Expert speakers receive no coaching — they always argue their natural best case.</p>
+
+    <p>This creates a learning trajectory across epochs. By Epoch 4, student speakers are building on arguments that proved robust in Epochs 1–3 and avoiding lines that were consistently demolished. The key empirical finding from the refinement literature is that <strong>quality improvement typically plateaus after 2–3 iterations</strong> while output length continues increasing <sup><a href="#ref-3">[3]</a></sup>. We observe a similar pattern: the most dramatic coaching gains appear in Epoch 2, with diminishing returns thereafter.</p>
+
+    <hr>
+
+    <h2>Output and Reproducibility</h2>
+
+    <p>Each run produces:</p>
+
+    <ul>
+      <li><strong><code>run_N.txt</code></strong>: Full debate transcript with speeches, POIs, definitions framework, and multi-layer verdict</li>
+      <li><strong><code>run_N_data.json</code></strong>: Complete structured data — per-speaker rubric scores, all claim/rebuttal annotations, engagement votes, argument audit — in a format ready for visualization</li>
+    </ul>
+
+    <p>Each epoch produces coaching memos. The full ensemble produces:</p>
+
+    <ul>
+      <li><strong><code>summary.json</code></strong>: Per-run outcomes, per-speaker scores, epoch-level aggregates</li>
+      <li><strong><code>synthesis.txt</code></strong>: An <code>o3</code> meta-analysis identifying patterns across all runs</li>
+    </ul>
+
+    <hr>
+
+    <h2>What I Learned</h2>
+
+    <h3>1. LLMs are better annotators than judges</h3>
+
+    <p>When you ask an LLM "who won this debate?", you get an opinion contaminated by the model's priors. When you ask "list every claim, classify its evidence type, and determine whether this rebuttal addresses the specific logic of the original claim," you get useful analytical work that you can aggregate mechanically. Anthropic's research <sup><a href="#ref-32">[32]</a></sup> on persuasiveness evaluation confirmed this pattern: model-based persuasiveness scores do not correlate well with human judgments due to self-preference bias and sycophantic tendencies — automated <em>holistic</em> evaluation remains unreliable, even as <em>analytical</em> annotation improves.</p>
+
+    <p>The best approach turned out to be a hybrid: use LLMs for annotation and analytical tasks, but add an anonymized evaluation layer specifically designed to assess engagement quality rather than conclusion quality.</p>
+
+    <h3>2. Anonymization is powerful debiasing</h3>
+
+    <p>Replacing speaker names and side labels with "Team A" and "Team B" eliminates a surprising amount of bias. When a judge doesn't know which team is arguing <em>for</em> AI and which is arguing <em>against</em>, they can't substitute their prior for analysis. The dual-pass mechanism (swapping which team is "A") catches any remaining position bias.</p>
+
+    <h3>3. Voice fidelity requires more than RAG</h3>
+
+    <p>Injecting a speaker's documents into the context window produces arguments that are <em>grounded</em> in the speaker's positions but don't <em>sound</em> like them. The style extraction step — capturing register, rhetorical devices, disagreement patterns, and signature phrases — is what makes the difference between "an LLM arguing Dr Shevlin's position" and "something that reads like Dr Shevlin." This is consistent with the persona drift problem documented in the NeurIPS 2025 persona consistency work <sup><a href="#ref-33">[33]</a></sup>, where GPT-4o showed particularly poor in-character consistency (5.81% on one benchmark) — larger models may actually be <em>more</em> prone to breaking character, making explicit style injection all the more important.</p>
+
+    <h3>4. Debate is harder to simulate than conversation</h3>
+
+    <p>Most multi-agent LLM research focuses on cooperative tasks — agents working together toward a shared goal. Debate is adversarial and cumulative. Each speech must respond to what came before while advancing the speaker's own case. The system needs to track definitions, detect when arguments have already been made (to avoid repetition), and model the strategic decision of whether to accept a Point of Information. Chen et al.'s ReConcile <sup><a href="#ref-35">[35]</a></sup> showed that heterogeneous model families with confidence-weighted voting yield up to 11.4% improvement over baselines — the diversity of agents matters as much as their individual quality. These are genuinely hard problems, and getting them even roughly right required dozens of iterations.</p>
+
+    <h3>5. The most interesting output isn't the prediction</h3>
+
+    <p>The most useful thing the simulation produces isn't a prediction of who will win. It's a map of the <em>argument space</em>: which clashes recur across runs, which arguments prove robust to rebuttal, and which lines collapse under scrutiny. Even if the verdict is wrong, the structural analysis — "this argument from Proposition was never effectively contested in any run" or "this Opposition line was demolished 4 out of 5 times" — is genuinely useful for understanding the debate landscape.</p>
+
+    <hr>
+
+    <h2>Mapping the Argument Landscape</h2>
+
+    <p>With 600+ annotated claims across 24 debate simulations, it's possible to go beyond per-run analysis and ask: <strong>what does the full argument space look like?</strong></p>
+
+    <p>The annotation layer already extracts every substantive claim in every speech, classifies it by type (evidence-backed, principled, assertion) and specificity, and tracks whether it was rebutted, demolished, or survived. That gives us a structured dataset of arguments with rich metadata. The question is how to find patterns in it.</p>
+
+    <h3>The Pipeline: Embed → Cluster → Label</h3>
+
+    <p>Each claim text is embedded using <code>text-embedding-3-large</code>, projected to 2D with UMAP (<code>n_neighbors=15, min_dist=0.1, metric='cosine'</code>), and clustered with HDBSCAN (<code>min_cluster_size=5</code>). UMAP preserves global semantic structure better than t-SNE — arguments about similar themes land near each other — while HDBSCAN finds natural clusters without requiring a pre-specified <em>k</em>, and gracefully handles outlier arguments that don't fit any theme.</p>
+
+    <p>The crucial step is <strong>LLM-assisted labelling</strong>. Raw embedding clusters are uninterpretable — you can see that points 47 and 312 are in the same group, but not <em>why</em>. A <code>gpt-4o</code> call reads each cluster's member claims and generates a 3–6 word name and a one-sentence description. This combination — embeddings for structure, LLMs for interpretation — is what makes the analysis actionable.</p>
+
+    <h3>What the Clusters Reveal</h3>
+
+    <p>Across 609 claims, HDBSCAN identified 38 distinct argument clusters. Some findings:</p>
+
+    <ul>
+      <li><strong>The argument space is asymmetric.</strong> Opposition arguments cluster more tightly — the same themes (algorithmic bias, professional deskilling, governance gaps) recur reliably. Proposition arguments are more dispersed, reflecting the wider range of positive cases for AI deployment.</li>
+      <li><strong>Survival rates vary dramatically.</strong> Some argument clusters (e.g., "AI Security Vulnerabilities," "AI Deception Risks") have near-100% survival rates — they're rarely successfully rebutted. Others (e.g., "AI Error Mitigation," "AI-Driven Fairness and Equity") are contested in 30–45% of appearances.</li>
+      <li><strong>Win correlation isn't just about argument quality.</strong> The "AI-Induced Arms Race" cluster has the highest win correlation (86%) for the side making it — not because the argument is inherently stronger, but because it tends to appear when the Opposition is already building a strong case and this argument goes unanswered by the final speaker.</li>
+      <li><strong>Student learning is visible.</strong> Comparing epoch 1 clusters against epoch 3–4 clusters for the student speakers shows a measurable shift away from generic assertions toward evidence-backed claims in the "AI Governance Frameworks" and "AI for Global Health Equity" clusters.</li>
+    </ul>
+
+    <h3>Interactive Visualization</h3>
+
+    <p>The full argument landscape is available as an <a href="https://t1mchee.github.io/this-house-believes-in-vibes/">interactive visualization</a> — a 2D scatter plot where each point is a claim, coloured by cluster, side, outcome, speaker, or survival status. Clicking a cluster shows its member claims, win rate, survival rate, and side distribution. Secondary charts show survival rates, win correlations, speaker distributions, and side splits across all clusters.</p>
+
+    <p>The visualization is built with Plotly.js and served as a static GitHub Pages site — no server, no API calls at runtime. All embeddings, clustering, and labelling are precomputed by the pipeline.</p>
+
+    <hr>
+
+    <h2>Technical Stack</h2>
+
+    <table>
+      <thead>
+        <tr><th>Component</th><th>Technology</th><th>Why</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Speech generation</td><td>OpenAI <code>o3</code></td><td>Best reasoning for long-form persona-faithful text</td></tr>
+        <tr><td>Analysis/extraction</td><td>OpenAI <code>gpt-4o</code></td><td>Fast, cheap, reliable for structured output</td></tr>
+        <tr><td>POIs</td><td>OpenAI <code>o4-mini</code></td><td>Fast reasoning for short, sharp interventions</td></tr>
+        <tr><td>Judging</td><td>OpenAI <code>gpt-4o</code> (temp 0.3–0.8)</td><td>Cost-effective for the 15+ judge calls per run</td></tr>
+        <tr><td>Embeddings</td><td><code>text-embedding-3-large</code></td><td>Best available for semantic retrieval</td></tr>
+        <tr><td>Vector store</td><td>ChromaDB (persistent)</td><td>Simple, local, no infrastructure needed</td></tr>
+        <tr><td>Orchestration</td><td>LangGraph</td><td>State machine with conditional edges</td></tr>
+        <tr><td>Tracing</td><td>LangSmith</td><td>Debugging LLM calls across the pipeline</td></tr>
+        <tr><td>Data models</td><td>Pydantic</td><td>Structured output enforcement</td></tr>
+      </tbody>
+    </table>
+
+    <p>Total cost per run: approximately $8–12 (dominated by <code>o3</code> speech generation). A full 20-run ensemble costs roughly $160–240.</p>
+
+    <hr>
+
+    <h2>Limitations and Future Work</h2>
+
+    <p><strong>Speaker data asymmetry</strong>: Some speakers have deep corpora (6 research papers, 4 interview transcripts); others have a single bio and one article. This affects the quality of RAG retrieval and persona fidelity.</p>
+
+    <p><strong>No audience modelling</strong>: The current system judges argumentative quality but doesn't model audience persuasion — how a room of Cambridge students, with their particular priors, would actually vote. This is a different (and arguably harder) problem.</p>
+
+    <p><strong>Single-motion design</strong>: The pipeline is currently hardcoded for this specific debate. Generalising to arbitrary motions would require rethinking how speaker positions are mapped to sides.</p>
+
+    <p><strong>Verification</strong>: The real debate hasn't happened yet. When it does, comparing the simulation's predictions against reality will be the ultimate test — and, I expect, a humbling one.</p>
+
+    <hr>
+
+    <h2>Try It Yourself</h2>
+
+    <p>The full codebase is available in the repository. You'll need an OpenAI API key and speaker corpora in the expected directory structure. See the <code>data/speakers/DATA_GUIDE.md</code> for formatting details.</p>
+
+    <pre><code># Single debate run
+python -m src.run
+
+# 20-run Monte Carlo ensemble with student learning
+python -m src.ensemble --epochs 4 --runs-per-epoch 5
+
+# Cluster analysis — embeds, clusters, and labels all claims
+python -m src.cluster</code></pre>
+
+    <p>The output goes to <code>output/</code> — full transcripts, structured JSON, and cross-run synthesis. The cluster analysis visualization lives in <code>docs/</code> and can be opened directly in a browser or served via GitHub Pages.</p>
+
+    <p class="post-meta" style="margin-top: 2rem; font-style: italic;">Built for the Cambridge Union Lent Term 2026, Fifth Debate. The motion was "This House Believes AI Should Be Allowed To Make Decisions About Human Life." The real debate will determine whether the simulation was any good.</p>
+
+    <hr>
+
+    <h2>References</h2>
+
+    <div class="references">
+      <p id="ref-1"><strong>[1]</strong> Irving, G., Christiano, P., &amp; Amodei, D. (2018). AI Safety via Debate. <em>arXiv preprint arXiv:1805.00899</em>.</p>
+      <p id="ref-2"><strong>[2]</strong> Du, Y., Li, S., Torralba, A., Tenenbaum, J. B., &amp; Mordatch, I. (2024). Improving Factuality and Reasoning in Language Models through Multiagent Debate. <em>Proceedings of ICML 2024</em>.</p>
+      <p id="ref-3"><strong>[3]</strong> Liang, T., He, Z., Jiao, W., et al. (2024). Encouraging Divergent Thinking in Large Language Models through Multi-Agent Debate. <em>Proceedings of EMNLP 2024</em>.</p>
+      <p id="ref-4"><strong>[4]</strong> Chan, C.-M., Chen, W., Su, Y., et al. (2024). ChatEval: Towards Better LLM-based Evaluators through Multi-Agent Debate. <em>Proceedings of ICLR 2024</em>.</p>
+      <p id="ref-5"><strong>[5]</strong> Khan, A., Hughes, J., Valentine, D., et al. (2024). Debating with More Persuasive LLMs Leads to More Truthful Answers. <em>Proceedings of ICML 2024</em>, <strong>Best Paper Award</strong>.</p>
+      <p id="ref-6"><strong>[6]</strong> Wang, Z. J., Peng, Y., Que, H., et al. (2023). RoleLLM: Benchmarking, Eliciting, and Enhancing Role-Playing Abilities of Large Language Models. <em>arXiv preprint arXiv:2310.00746</em>.</p>
+      <p id="ref-7"><strong>[7]</strong> Argyle, L. P., Busby, E. C., Fulda, N., et al. (2023). Out of One, Many: Using Language Models to Simulate Human Samples. <em>Political Analysis</em>, 31(3), 337–351.</p>
+      <p id="ref-8"><strong>[8]</strong> Shao, Y., Li, L., Dai, J., &amp; Qiu, X. (2023). Character-LLM: A Trainable Agent for Role-Playing. <em>Proceedings of EMNLP 2023</em>.</p>
+      <p id="ref-9"><strong>[9]</strong> Wang, X., et al. (2025). CoSER: Consistent Character Role-Playing with Supervised and Reinforcement Learning. <em>Proceedings of ICML 2025</em>.</p>
+      <p id="ref-10"><strong>[10]</strong> Santurkar, S., Durmus, E., Ladhak, F., et al. (2023). Whose Opinions Do Language Models Reflect? <em>Proceedings of ICML 2023</em>.</p>
+      <p id="ref-11"><strong>[11]</strong> Li, Y., Zhang, Y., Sun, L., &amp; Han, J. (2024). Agent Communication Topologies: Improving Multi-Agent Debate with Sparse Interactions. <em>Findings of EMNLP 2024</em>.</p>
+      <p id="ref-12"><strong>[12]</strong> Zhang, Y., et al. (2024). Agent4Debate: Can LLM Agents Debate Like Humans? <em>arXiv preprint arXiv:2408.04472</em>.</p>
+      <p id="ref-13"><strong>[13]</strong> Sharma, M., Tong, M., Korbak, T., et al. (2023). Towards Understanding Sycophancy in Language Models. <em>arXiv preprint arXiv:2310.13548</em>.</p>
+      <p id="ref-14"><strong>[14]</strong> Number-of-Flip: Measuring LLM Sycophancy in Multi-Turn Debate. (2025). <em>Findings of ACL 2025</em>.</p>
+      <p id="ref-15"><strong>[15]</strong> Zheng, L., Chiang, W.-L., Sheng, Y., et al. (2023). Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena. <em>Advances in NeurIPS 36 (2023)</em>.</p>
+      <p id="ref-16"><strong>[16]</strong> CALM: A Comprehensive Alignment Framework for LLM-as-Judge Metacognition. (2025). <em>Proceedings of ICLR 2025</em>.</p>
+      <p id="ref-17"><strong>[17]</strong> Liang, R., et al. (2024). Debatrix: Multi-Dimensional Debate Judge with Iterative Chronological Analysis Based on LLM. <em>Findings of ACL 2024</em>.</p>
+      <p id="ref-18"><strong>[18]</strong> Wachsmuth, H., Naderi, N., Hou, Y., et al. (2017). Computational Argumentation Quality Assessment in Natural Language. <em>Proceedings of EACL 2017</em>.</p>
+      <p id="ref-19"><strong>[19]</strong> Heinisch, P., Daxenberger, J., &amp; Gurevych, I. (2024). Argument Quality Assessment with LLMs: A Systematic Evaluation. <em>Proceedings of LREC-COLING 2024</em>.</p>
+      <p id="ref-20"><strong>[20]</strong> Toulmin, S. E. (1958). <em>The Uses of Argument</em>. Cambridge University Press.</p>
+      <p id="ref-21"><strong>[21]</strong> Giordano, F., et al. (2024). Critical-Questions-of-Thought: Steering LLM Reasoning with Argumentation Theory. <em>arXiv preprint arXiv:2412.15177</em>.</p>
+      <p id="ref-22"><strong>[22]</strong> Hopp, F. R., et al. (2024). Computational Analysis of Rhetorical Quality in Online Debates. <em>Journal of Communication</em>, 74(3).</p>
+      <p id="ref-23"><strong>[23]</strong> VERDICT: Multi-Agent Judge Framework. Haize Labs. (2024).</p>
+      <p id="ref-24"><strong>[24]</strong> Potter, A., et al. (2024). Hidden Persuaders: LLMs' Political Leaning and Their Influence on Voters. <em>Proceedings of EMNLP 2024</em>.</p>
+      <p id="ref-25"><strong>[25]</strong> Taubenfeld, A., et al. (2024). Systematic Biases in LLM Simulations of Debates. <em>arXiv preprint arXiv:2402.04049</em>.</p>
+      <p id="ref-26"><strong>[26]</strong> Sarstedt, M., et al. (2024). Using Large Language Models to Generate Silicon Samples. <em>Psychology &amp; Marketing</em>, 41(6), 1271–1287.</p>
+      <p id="ref-27"><strong>[27]</strong> Wataoka, K., et al. (2024). Self-Preference Bias in LLM-as-a-Judge. <em>NeurIPS 2024 Workshop on Foundation Model Interventions</em>.</p>
+      <p id="ref-28"><strong>[28]</strong> Wu, Y., et al. (2025). On the Limits of Multi-Agent LLM Debate: When Majority Voting is All You Need. <em>arXiv preprint</em>.</p>
+      <p id="ref-29"><strong>[29]</strong> Smit, A., et al. (2024). When Do Multi-Agent LLM Debates Improve Reasoning? <em>Proceedings of ICML 2024</em>.</p>
+      <p id="ref-30"><strong>[30]</strong> Madaan, A., Tandon, N., Gupta, P., et al. (2023). Self-Refine: Iterative Refinement with Self-Feedback. <em>Advances in NeurIPS 36 (2023)</em>.</p>
+      <p id="ref-31"><strong>[31]</strong> Tessler, M. H., Bakker, M. A., Jarrett, D., et al. (2024). AI Can Help Humans Find Common Ground in Democratic Deliberation. <em>Science</em>, 386(6719).</p>
+      <p id="ref-32"><strong>[32]</strong> Anthropic. (2024). Measuring Persuasion. <em>Anthropic Research Blog</em>.</p>
+      <p id="ref-33"><strong>[33]</strong> Multi-Turn RL for Persona Consistency in Long-Form Role-Playing. (2025). <em>Advances in NeurIPS 38 (2025)</em>.</p>
+      <p id="ref-34"><strong>[34]</strong> Dung, P. M. (1995). On the Acceptability of Arguments and Its Fundamental Role in Nonmonotonic Reasoning, Logic Programming and n-Person Games. <em>Artificial Intelligence</em>, 77(2), 321–357.</p>
+      <p id="ref-35"><strong>[35]</strong> Chen, J., Saha, S., &amp; Bansal, M. (2024). ReConcile: Round-Table Conference Improves Reasoning via Consensus Among Diverse LLMs. <em>Proceedings of ACL 2024</em>.</p>
+    </div>
+  </div>
+</body>
+</html>
+
