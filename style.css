@@ -306,6 +306,21 @@ img {
   color: var(--text-secondary);
 }
 
+.book-links {
+  font-size: 0.85em;
+  color: var(--text-secondary);
+}
+
+.book-links a {
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.book-links a:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
+
 /* ─── Post Page ─── */
 .post-header {
   margin-bottom: 2rem;
@@ -411,4 +426,6 @@ sup a:hover {
     padding: 0.4rem 0.5rem;
   }
 }
+
+
 
