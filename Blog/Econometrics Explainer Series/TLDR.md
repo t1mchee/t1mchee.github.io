@@ -1,0 +1,1 @@
+I think mathematicians and ML researchers often dismiss the data intuition behind regression techniques, while economists often anchor too much to it and miss the geometric elegance. This series tries to bridge that.

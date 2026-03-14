@@ -1,0 +1,3 @@
+I signed up to participate in a Cambridge Union debate with philosophers of cognition, AI legal experts (and initially an anthropic research scientist and MP before they pulled out).
+
+Beforehand, I scraped a massive corpus of the guest participants' interviews and publications to build personas, used a multi-agent workflow to simulate debate engagements dozens of times, and clustered extracted arguments to build a "debate landscape" forecast.
