@@ -304,19 +304,9 @@ img {
 }
 
 /* ─── Books List ─── */
-.books-list {
-  list-style: none;
-  padding: 0;
-}
-
 .books-list li {
   padding: 0.2rem 0;
   color: var(--text);
-}
-
-.books-list li::before {
-  content: "– ";
-  color: var(--text-secondary);
 }
 
 .book-links {
