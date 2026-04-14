@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Editor Mode - Tim Chee</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <script src="favicon.js" defer></script>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .editor-shell {
+      max-width: 960px;
+    }
+
+    .editor-card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      background: rgba(255, 255, 255, 0.45);
+      backdrop-filter: blur(1px);
+    }
+
+    .editor-card h2 {
+      margin-top: 0;
+      margin-bottom: 0.6rem;
+    }
+
+    .editor-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    .editor-field {
+      margin-bottom: 0.75rem;
+    }
+
+    .editor-field label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.2rem;
+    }
+
+    .editor-field input,
+    .editor-field textarea,
+    .editor-field select {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.55rem 0.65rem;
+      font-size: 0.92rem;
+      font-family: inherit;
+      background: #fff;
+      color: var(--text);
+    }
+
+    .editor-field textarea {
+      min-height: 150px;
+      resize: vertical;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.86rem;
+      line-height: 1.5;
+    }
+
+    .editor-actions {
+      display: flex;
+      gap: 0.55rem;
+      flex-wrap: wrap;
+      margin-top: 0.3rem;
+    }
+
+    .editor-btn {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.5rem 0.8rem;
+      background: #fff;
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.87rem;
+      text-decoration: none;
+    }
+
+    .editor-btn.primary {
+      background: #D97706;
+      border-color: #D97706;
+      color: #fff;
+    }
+
+    .editor-btn:hover {
+      opacity: 0.92;
+    }
+
+    .editor-note,
+    .editor-status {
+      font-size: 0.86rem;
+      color: var(--text-secondary);
+      margin-top: 0.4rem;
+    }
+
+    .editor-status.error {
+      color: #a33;
+    }
+
+    .editor-status.success {
+      color: #2d7f4f;
+    }
+
+    .editor-lock {
+      max-width: 480px;
+      margin: 2rem auto 0;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 760px) {
+      .editor-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="dot-grid"></canvas>
+  <div class="container editor-shell">
+    <nav>
+      <a href="index.html" class="site-name">Tim Chee</a>
+      <a href="index.html">About</a>
+      <a href="writing.html">Writing</a>
+      <a href="cv.html">CV</a>
+      <a href="coursework.html">Coursework</a>
+      <a href="ceramics.html">Ceramics</a>
+    </nav>
+
+    <div id="lock-screen" class="editor-card editor-lock">
+      <h1>Editor Mode</h1>
+      <p class="editor-note">Hidden mode. Enter password to unlock.</p>
+      <div class="editor-field">
+        <label for="editor-password">Password</label>
+        <input type="password" id="editor-password" autocomplete="current-password">
+      </div>
+      <div class="editor-actions">
+        <button id="unlock-btn" class="editor-btn primary" type="button">Unlock</button>
+      </div>
+      <p id="lock-status" class="editor-status"></p>
+    </div>
+
+    <div id="editor-app" class="hidden">
+      <h1>Editor Mode</h1>
+      <p class="editor-note">Publishes directly to GitHub. Keep your token private and scoped to this repository.</p>
+
+      <section class="editor-card">
+        <h2>Git Sync</h2>
+        <div class="editor-grid">
+          <div class="editor-field">
+            <label for="gh-owner">Owner</label>
+            <input id="gh-owner" type="text" value="t1mchee" spellcheck="false">
+          </div>
+          <div class="editor-field">
+            <label for="gh-repo">Repo</label>
+            <input id="gh-repo" type="text" value="t1mchee.github.io" spellcheck="false">
+          </div>
+          <div class="editor-field">
+            <label for="gh-branch">Branch</label>
+            <input id="gh-branch" type="text" value="main" spellcheck="false">
+          </div>
+          <div class="editor-field">
+            <label for="gh-token">GitHub Token (classic/fine-grained PAT)</label>
+            <input id="gh-token" type="password" placeholder="ghp_..." autocomplete="off" spellcheck="false">
+          </div>
+        </div>
+        <div class="editor-actions">
+          <button id="connect-btn" class="editor-btn primary" type="button">Connect</button>
+          <button id="refresh-btn" class="editor-btn" type="button">Refresh Indexes</button>
+        </div>
+        <p id="git-status" class="editor-status"></p>
+      </section>
+
+      <section class="editor-card">
+        <h2>Writing: New Post</h2>
+        <div class="editor-grid">
+          <div class="editor-field">
+            <label for="post-slug">Slug (file name without .html)</label>
+            <input id="post-slug" type="text" placeholder="my-new-post" spellcheck="false">
+          </div>
+          <div class="editor-field">
+            <label for="post-title">Title</label>
+            <input id="post-title" type="text">
+          </div>
+          <div class="editor-field">
+            <label for="post-tag">Tag</label>
+            <input id="post-tag" type="text" placeholder="Essay">
+          </div>
+          <div class="editor-field">
+            <label for="post-date-iso">Date (YYYY-MM-DD)</label>
+            <input id="post-date-iso" type="date">
+          </div>
+          <div class="editor-field">
+            <label for="post-date-display">Display Date</label>
+            <input id="post-date-display" type="text" placeholder="April 2026">
+          </div>
+          <div class="editor-field">
+            <label for="post-description">Writing Index Description</label>
+            <input id="post-description" type="text">
+          </div>
+        </div>
+        <div class="editor-field">
+          <label for="post-markdown">Markdown</label>
+          <textarea id="post-markdown" placeholder="# Your post"></textarea>
+        </div>
+        <div class="editor-actions">
+          <button id="publish-post-btn" class="editor-btn primary" type="button">Publish Post</button>
+        </div>
+        <p id="post-status" class="editor-status"></p>
+      </section>
+
+      <section class="editor-card">
+        <h2>Writing: Edit Existing (editor-created posts)</h2>
+        <div class="editor-grid">
+          <div class="editor-field">
+            <label for="edit-post-select">Select Post</label>
+            <select id="edit-post-select"></select>
+          </div>
+          <div class="editor-field">
+            <label for="edit-post-title">Title</label>
+            <input id="edit-post-title" type="text">
+          </div>
+          <div class="editor-field">
+            <label for="edit-post-tag">Tag</label>
+            <input id="edit-post-tag" type="text">
+          </div>
+          <div class="editor-field">
+            <label for="edit-post-date-iso">Date (YYYY-MM-DD)</label>
+            <input id="edit-post-date-iso" type="date">
+          </div>
+          <div class="editor-field">
+            <label for="edit-post-date-display">Display Date</label>
+            <input id="edit-post-date-display" type="text">
+          </div>
+          <div class="editor-field">
+            <label for="edit-post-description">Description</label>
+            <input id="edit-post-description" type="text">
+          </div>
+        </div>
+        <div class="editor-field">
+          <label for="edit-post-markdown">Markdown</label>
+          <textarea id="edit-post-markdown"></textarea>
+        </div>
+        <div class="editor-actions">
+          <button id="load-post-btn" class="editor-btn" type="button">Load</button>
+          <button id="save-post-btn" class="editor-btn primary" type="button">Save Changes</button>
+        </div>
+        <p id="edit-post-status" class="editor-status"></p>
+      </section>
+
+      <section class="editor-card">
+        <h2>Ceramics: New Piece</h2>
+        <div class="editor-grid">
+          <div class="editor-field">
+            <label for="ceramic-id">ID (slug)</label>
+            <input id="ceramic-id" type="text" placeholder="new-piece" spellcheck="false">
+          </div>
+          <div class="editor-field">
+            <label for="ceramic-title">Title</label>
+            <input id="ceramic-title" type="text">
+          </div>
+          <div class="editor-field">
+            <label for="ceramic-alt">Image Alt Text</label>
+            <input id="ceramic-alt" type="text">
+          </div>
+          <div class="editor-field">
+            <label for="ceramic-meta">Meta Line</label>
+            <input id="ceramic-meta" type="text" placeholder="Stoneware - Wheel-thrown">
+          </div>
+        </div>
+        <div class="editor-field">
+          <label for="ceramic-description">Description</label>
+          <textarea id="ceramic-description"></textarea>
+        </div>
+        <div class="editor-field">
+          <label for="ceramic-image">Image File</label>
+          <input id="ceramic-image" type="file" accept="image/*">
+        </div>
+        <div class="editor-actions">
+          <button id="publish-ceramic-btn" class="editor-btn primary" type="button">Publish Piece</button>
+        </div>
+        <p id="ceramic-status" class="editor-status"></p>
+      </section>
+
+      <section class="editor-card">
+        <h2>Ceramics: Edit Existing (editor-created pieces)</h2>
+        <div class="editor-grid">
+          <div class="editor-field">
+            <label for="edit-ceramic-select">Select Piece</label>
+            <select id="edit-ceramic-select"></select>
+          </div>
+          <div class="editor-field">
+            <label for="edit-ceramic-title">Title</label>
+            <input id="edit-ceramic-title" type="text">
+          </div>
+          <div class="editor-field">
+            <label for="edit-ceramic-alt">Alt Text</label>
+            <input id="edit-ceramic-alt" type="text">
+          </div>
+          <div class="editor-field">
+            <label for="edit-ceramic-meta">Meta Line</label>
+            <input id="edit-ceramic-meta" type="text">
+          </div>
+        </div>
+        <div class="editor-field">
+          <label for="edit-ceramic-description">Description</label>
+          <textarea id="edit-ceramic-description"></textarea>
+        </div>
+        <div class="editor-field">
+          <label for="edit-ceramic-image">Replace Image (optional)</label>
+          <input id="edit-ceramic-image" type="file" accept="image/*">
+        </div>
+        <div class="editor-actions">
+          <button id="load-ceramic-btn" class="editor-btn" type="button">Load</button>
+          <button id="save-ceramic-btn" class="editor-btn primary" type="button">Save Changes</button>
+        </div>
+        <p id="edit-ceramic-status" class="editor-status"></p>
+      </section>
+
+      <section class="editor-card">
+        <h2>CV PDF Upload</h2>
+        <div class="editor-grid">
+          <div class="editor-field">
+            <label for="cv-file">PDF File</label>
+            <input id="cv-file" type="file" accept="application/pdf">
+          </div>
+          <div class="editor-field">
+            <label for="cv-filename">Save As (optional)</label>
+            <input id="cv-filename" type="text" placeholder="TC_CV_310326.pdf" spellcheck="false">
+          </div>
+        </div>
+        <div class="editor-actions">
+          <button id="upload-cv-btn" class="editor-btn primary" type="button">Upload CV</button>
+        </div>
+        <p id="cv-status" class="editor-status"></p>
+      </section>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="dot-grid.js"></script>
+  <script src="editor-mode.js"></script>
+  <script data-goatcounter="https://timothychee.goatcounter.com/count"
+          async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
