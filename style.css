@@ -218,7 +218,7 @@ img {
 /* ─── Profile Section ─── */
 .profile-section {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 1.5rem;
   margin-bottom: 1.5rem;
 }
@@ -229,10 +229,14 @@ img {
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
+  filter: grayscale(100%) brightness(1.15);
 }
 
 .intro-text {
   font-size: 1.05rem;
+  font-weight: 600;
+  font-style: italic;
+  color: #D97706;
 }
 
 /* ─── Contact Links ─── */
