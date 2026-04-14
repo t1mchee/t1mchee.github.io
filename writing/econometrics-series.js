@@ -132,9 +132,13 @@
   function buildExampleDetails() {
     const details = document.createElement("details");
     details.className = "series-callout series-callout--example";
-    details.open = true;
+    details.open = false;
     const summary = document.createElement("summary");
     summary.className = "series-example-summary";
+    const label = document.createElement("span");
+    label.className = "series-example-summary-label";
+    label.textContent = "Example";
+    summary.appendChild(label);
     const inner = document.createElement("div");
     inner.className = "series-example-body";
     details.appendChild(summary);
@@ -154,9 +158,10 @@
       if (!isExampleHeading(h) || h.closest(".series-callout--example")) {
         return;
       }
-      const { details, summary, inner } = buildExampleDetails();
+      const { details, inner } = buildExampleDetails();
+      details.setAttribute("aria-label", "Worked example section");
       h.replaceWith(details);
-      summary.appendChild(h);
+      inner.appendChild(h);
       moveExampleFollowingSiblings(details, inner, h.tagName);
     });
 
@@ -171,9 +176,10 @@
       if (!/^worked example/i.test(strong.textContent.trim())) {
         return;
       }
-      const { details, summary, inner } = buildExampleDetails();
+      const { details, inner } = buildExampleDetails();
+      details.setAttribute("aria-label", "Worked example continued section");
       p.replaceWith(details);
-      summary.appendChild(p);
+      inner.appendChild(p);
       moveExampleFollowingSiblings(details, inner, null);
     });
   }
