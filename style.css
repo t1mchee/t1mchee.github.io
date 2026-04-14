@@ -219,13 +219,13 @@ img {
 .profile-section {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1rem;
   margin-bottom: 1.5rem;
 }
 
 .profile-photo {
-  width: 140px;
-  height: 140px;
+  width: 180px;
+  height: 180px;
   border-radius: 8px;
   object-fit: cover;
   flex-shrink: 0;
