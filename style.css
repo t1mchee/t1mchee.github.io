@@ -234,7 +234,7 @@ img {
 
 .intro-text {
   font-size: 1.05rem;
-  font-weight: 600;
+  font-weight: normal;
   font-style: italic;
   color: #D97706;
 }
