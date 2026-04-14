@@ -296,6 +296,14 @@ img {
   font-weight: 400;
 }
 
+.writing-list .post-date {
+  display: inline-block;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}
+
 .writing-list .post-description {
   color: var(--text-secondary);
   font-size: 0.95rem;
