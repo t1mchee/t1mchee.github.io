@@ -14,9 +14,9 @@ Projecting onto a big subspace and then a smaller one is the same as projecting 
 
 > **Intuition**: If you first summarise $Y$ using more information ($\mathcal{G}_2$), then summarise that using less information ($\mathcal{G}_1$), you get the same thing as summarising $Y$ directly using less information.
 
-The geometry reveals something the probability statement hides: the reverse composition doesn't work. $P_2 P_1 \neq P_1$ in general. Projecting first onto the coarse subspace $V_1$ and then onto the finer $V_2$ does not recover $P_2 Y$. Translated back, conditioning on a coarse $\sigma$-algebra first and then refining does not give the fine conditional expectation back. Once information is thrown away, subsequent conditioning cannot restore it.
+The geometry reveals something the probability notation hides. $P_1 P_2 = P_1$ but $P_2 P_1 \neq P_1$ in general. Projecting first onto the coarse subspace $V_1$ and then onto the finer $V_2$ does not recover $P_2 Y$. Translated back, conditioning on a coarse $\sigma$-algebra first and then refining does not give the fine conditional expectation back. Once you project information away, no subsequent projection onto a finer subspace can recover what you lost.
 
-The tower property goes one way only. Composition of projections depends on order, and the asymmetry cashes out as a directional statement about information: you can discard detail by projecting to a coarser subspace, but you cannot manufacture it by projecting back. The probability-side version doesn't obviously contain this asymmetry; the geometric version exhibits it directly.
+The tower property has a direction, and the direction is toward less information, never more. The probability statement $\mathbb{E}[\mathbb{E}[Y|\mathcal{G}_2]|\mathcal{G}_1] = \mathbb{E}[Y|\mathcal{G}_1]$ doesn't obviously contain this asymmetry. The geometry makes it jump out.
 
 ---
 
@@ -53,6 +53,8 @@ $$\mathbf{X}'\mathbf{w} = (1, 1), \qquad (\mathbf{X}'\mathbf{X})^{-1}\mathbf{X}'
 Times $\gamma = 1$: predicted bias $(1/3, 1/3)$. Matches the direct computation.
 
 Geometrically, $(\mathbf{X}'\mathbf{X})^{-1}\mathbf{X}'\mathbf{w}$ is the coordinate representation of $\mathbf{w}$'s shadow on $\text{col}(\mathbf{X})$, written in the $(\mathbf{x}_1, \mathbf{x}_2)$ basis. The shadow points to $(1/3, 1/3)$, meaning $\mathbf{w}$'s component inside the plane is $\frac{1}{3}\mathbf{x}_1 + \frac{1}{3}\mathbf{x}_2$. When $\mathbf{w}$'s contribution to $\mathbf{y}$ is missing from the regression, that shadow gets absorbed by $\hat\beta$ and scaled by $\gamma$. Bias is the shadow of $\mathbf{w}\gamma$ on $\text{col}(\mathbf{X})$, and the formula is reading off the coordinates of that shadow.
+
+Notice that the bias has a direction. Both $\hat\beta_1$ and $\hat\beta_2$ are pulled up by $1/3$ because $\mathbf{w}$'s shadow has equal components along $\mathbf{x}_1$ and $\mathbf{x}_2$. A different $\mathbf{w}$, more aligned with $\mathbf{x}_1$ than $\mathbf{x}_2$, would bias $\hat\beta_1$ more than $\hat\beta_2$. OVB is a vector pointing along whichever regressors the omitted variable correlates with most strongly. The textbook habit of reporting "the bias on the education coefficient" is a one-coordinate slice of a higher-dimensional pull on the whole vector $\hat\beta$.
 
 ---
 

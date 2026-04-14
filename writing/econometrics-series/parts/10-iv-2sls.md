@@ -38,23 +38,15 @@ The setup has three arrows. $\boldsymbol{Z}$ lies in a horizontal clean-zone pla
 
 ## IV Estimation: Changing the Orthogonality Condition
 
-### The Economics
+The IV estimator changes which orthogonality condition the residual has to satisfy. OLS says $\mathbf{e} \perp \text{col}(\mathbf{X})$, equivalently $\mathbb{E}[X\varepsilon] = 0$. When this fails (when ability tilts $\varepsilon$ toward the education direction), the residual cannot be made perpendicular to $\text{col}(\mathbf{X})$ without absorbing the shadow. IV says: stop trying. Make the residual perpendicular to $\text{col}(\boldsymbol{Z})$ instead. The exclusion restriction $\mathbb{E}[Z\varepsilon] = 0$ says this is achievable: the error has no component along the instrument. The projection still lands in $\text{col}(\mathbf{X})$, so we are still expressing $\hat{\mathbf{y}}$ as $\mathbf{X}\hat\beta$; only the direction from which we approach the regressor space has changed.
 
-The IV estimator replaces the OLS moment condition $\mathbb{E}[X\varepsilon] = 0$ (which is false under endogeneity) with the IV moment condition $\mathbb{E}[Z\varepsilon] = 0$ (which is true by the exclusion restriction). The residual has to be orthogonal to $Z$ instead of $X$.
+This is an **oblique projection**: project $\mathbf{y}$ onto $\text{col}(\mathbf{X})$ along the direction perpendicular to $\text{col}(\boldsymbol{Z})$, rather than perpendicular to $\text{col}(\mathbf{X})$ itself.
 
 In the just-identified case ($k$ instruments for $k$ endogenous regressors), the IV estimator is:
 
 $$\hat\beta_{IV} = (\boldsymbol{Z}'\mathbf{X})^{-1}\boldsymbol{Z}'\mathbf{y}$$
 
 This is the method of moments estimator from the condition $\mathbb{E}[Z(Y - X'\beta)] = 0$.
-
-### The Geometry
-
-OLS enforces $\mathbf{e} \perp \text{col}(\mathbf{X})$: the residual is perpendicular to the regressor space. This is orthogonal projection, dropping a perpendicular from $\mathbf{y}$ onto $\text{col}(\mathbf{X})$.
-
-IV enforces $\mathbf{e} \perp \text{col}(\boldsymbol{Z})$: the residual is perpendicular to the _instrument_ space. Since $\boldsymbol{Z} \neq \mathbf{X}$, the residual is being made perpendicular to a different subspace. The projection still lands in $\text{col}(\mathbf{X})$; we are still expressing $\hat{\mathbf{y}}$ as $\mathbf{X}\hat\beta$. The direction from which we approach $\text{col}(\mathbf{X})$ has changed.
-
-This is an **oblique projection**: project $\mathbf{y}$ onto $\text{col}(\mathbf{X})$ along the direction perpendicular to $\text{col}(\boldsymbol{Z})$, rather than perpendicular to $\text{col}(\mathbf{X})$ itself.
 
 > **Intuition**: OLS drops a perpendicular from $\mathbf{y}$ straight down onto the floor ($\text{col}(\mathbf{X})$). IV drops a line from $\mathbf{y}$ down to the floor too, but the line is perpendicular to a different plane ($\text{col}(\boldsymbol{Z})$). The line hits the floor at a different point. When $\boldsymbol{\varepsilon}$ is correlated with $\mathbf{X}$, the OLS perpendicular lands at the wrong point because the shadow contaminates it. The IV line, angled to be perpendicular to $\boldsymbol{Z}$ instead, avoids the shadow because $\varepsilon \perp Z$ in the population.
 
@@ -120,9 +112,9 @@ The composition projects $\mathbf{y}$ onto a $k$-dimensional subspace within $\t
 
 ### Weak Instruments: Relevance Failure
 
-The relevance condition $\mathbb{E}[ZX] \neq 0$ requires that $\mathbf{X}$ has a nontrivial projection onto $\text{col}(\boldsymbol{Z})$. If the instruments are weak ($\boldsymbol{Z}$ is barely correlated with $\mathbf{X}$), then $\hat{\mathbf{X}} = \mathbf{P}_{\boldsymbol{Z}} \mathbf{X}$ is almost zero. The first stage extracts almost no variation from $\mathbf{X}$.
+Picture the shadow of $\mathbf{X}$ on the instrument plane. When the instrument is strong, the shadow is a robust vector with a clear direction in $\text{col}(\boldsymbol{Z})$. When the instrument is weak, the shadow is a tiny smudge, nearly zero-length. That smudge is $\hat{\mathbf{X}} = \mathbf{P}_{\boldsymbol{Z}}\mathbf{X}$, and it is what the second stage has to work with. Tiny perturbations in $\mathbf{y}$ cause $\hat\beta_{2SLS}$ to swing wildly. It is like trying to measure the slope of a surface from a nearly-horizontal shadow: the measurement is well-defined but extremely unstable.
 
-Geometrically, $\mathbf{X}$ is nearly orthogonal to $\text{col}(\boldsymbol{Z})$. The projection $\mathbf{P}_{\boldsymbol{Z}} \mathbf{X}$ is a tiny sliver: the shadow of $\mathbf{X}$ on the instrument plane is nearly zero-length. The second stage then projects $\mathbf{y}$ onto the subspace spanned by that sliver, and tiny perturbations in $\mathbf{y}$ cause $\hat\beta_{2SLS}$ to swing wildly. It is like trying to measure the slope of a surface from a nearly-horizontal shadow: the measurement is well-defined but extremely unstable. The estimator is consistent but has enormous variance, and in finite samples it can be severely biased.
+Formally: the relevance condition $\mathbb{E}[ZX] \neq 0$ requires that $\mathbf{X}$ has a nontrivial projection onto $\text{col}(\boldsymbol{Z})$. Weak instruments ($\boldsymbol{Z}$ barely correlated with $\mathbf{X}$) make $\mathbf{X}$ nearly orthogonal to $\text{col}(\boldsymbol{Z})$, and the first stage extracts almost no variation. The estimator is consistent but has enormous variance, and in finite samples it can be severely biased.
 
 In the economics language, proximity to college barely predicts education, so the exogenous variation we extract is minuscule. We are estimating the return to education using almost no variation, and the estimate is unreliable. In the geometric language, we are projecting onto a nearly-degenerate subspace, which is the same problem as near-multicollinearity, now in the instrument-purified space.
 

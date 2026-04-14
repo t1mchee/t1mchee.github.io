@@ -128,6 +128,8 @@ $$2\theta_1 + \theta_2 = 6, \qquad \theta_1 + 2\theta_2 = 5$$
 
 Solving: $\hat\theta = (7/3, 4/3)$. At this point, $m(\hat\theta) = (1/3, 1/3, -1/3)$. Each moment condition is violated by the same amount. Equal weighting gives equal sacrifice.
 
+The residual moment vector $(1/3, 1/3, -1/3)$ points perpendicular to the 2D plane $\{m(\theta) : \theta \in \mathbb{R}^2\}$ inside $\mathbb{R}^3$. It is the leftover distance the plane cannot eliminate, fixed by the plane's orientation relative to the origin.
+
 **Reweighted.** Set $W = \text{diag}(1, 1, 4)$, putting four times more weight on the third moment. Minimise $m_1^2 + m_2^2 + 4 m_3^2$:
 
 $$5\theta_1 + 4\theta_2 = 18, \qquad 4\theta_1 + 5\theta_2 = 17$$

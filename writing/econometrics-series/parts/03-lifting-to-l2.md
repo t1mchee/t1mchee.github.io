@@ -6,11 +6,15 @@ Everything in the previous post lives in $\mathbb{R}^n$. Each axis is one observ
 
 The population is different. It has infinitely many potential observations; we don't have a data matrix but a joint distribution. We want to do the same projection geometry in this world. The question is whether we can.
 
-For the machinery to carry over, we need length and angle for random variables, obeying the same rules as Euclidean geometry. That means we need an inner product. Here is the candidate: for random variables $X$ and $Y$ with finite second moments, define
+For projection to work, we need three things: a notion of length (how big is a random variable?), a notion of angle (how aligned are two random variables?), and these have to obey the Pythagorean theorem and the projection recipe we just used.
+
+The candidates are already in front of us. The "size" of a random variable should be something like $\sqrt{\mathbb{E}[X^2]}$: its root mean square. The "alignment" between $X$ and $Y$ should be $\mathbb{E}[XY]$: their expected product. These are not arbitrary. We have been using $\frac{1}{n}\sum_i x_i y_i$ as an inner product on $\mathbb{R}^n$ this whole time, and that sample inner product is a Monte Carlo estimator of $\mathbb{E}[XY]$. The population inner product is the limit the sample one converges to. The geometry we just did with data vectors is an empirical approximation of geometry on random variables.
+
+So define
 
 $$\langle X, Y \rangle = \mathbb{E}[XY]$$
 
-Check the axioms:
+and check the axioms:
 
 - **Linearity**: $\langle aX + bZ, Y \rangle = a\mathbb{E}[XY] + b\mathbb{E}[ZY]$
 - **Symmetry**: $\langle X, Y \rangle = \langle Y, X \rangle$
@@ -40,6 +44,8 @@ In $L^2(P)$, the expectation $\mathbb{E}[X]$ is the inner product of $X$ with th
 $$\mathbb{E}[X] = \langle X, \mathbf{1} \rangle$$
 
 This is trivial but useful. The constant $\mathbf{1}$ plays the role of a basis vector in the space, and expectations are inner products of data with that one direction. Centring $X$ by subtracting its mean is geometrically the same as projecting $X$ onto the orthogonal complement of $\mathbf{1}$.
+
+The identity has a payoff economists use without thinking. Whenever we centre the outcome before computing $R^2$, we are removing the component of $\mathbf{y}$ along the constant vector $\mathbf{1}$. The "total sum of squares" $\|\mathbf{y} - \bar y \mathbf{1}\|^2$ is the squared length of $\mathbf{y}$ after projecting out the constant direction. Then $R^2$ is the fraction of that residualised length the regressors recover. The algebra of "subtract the mean" and the geometry of "project onto $\mathbf{1}^\perp$" are the same operation.
 
 ---
 

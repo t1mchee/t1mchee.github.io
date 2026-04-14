@@ -36,7 +36,7 @@ Every source of endogeneity reduces to this picture. Ability lurking in the erro
 
 ### Four ways the shadow can appear
 
-Unbiasedness requires the projection to hit $\beta$ on target. That can go wrong in four places.
+Unbiasedness requires the projection to hit $\beta$ on target. Four different things can cause it to miss, each breaking the link between where OLS lands and where $\beta$ lives in a different way.
 
 Linearity makes $\text{col}(\mathbf{X})$ the right subspace to project onto. If the true conditional expectation is curved, the flat subspace doesn't contain it, and the closest-flat-point approximation misses $\beta$ systematically.
 

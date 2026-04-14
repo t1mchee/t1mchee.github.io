@@ -16,6 +16,8 @@ $$\hat\beta = \arg\min_\beta \| \mathbf{y} - \mathbf{X}\beta \|^2$$
 
 The set of all possible fitted values $\{\mathbf{X}\beta : \beta \in \mathbb{R}^k\}$ is the **column space** $\text{col}(\mathbf{X})$: the $k$-dimensional subspace of $\mathbb{R}^n$ spanned by the columns of $\mathbf{X}$. OLS finds the point in this subspace closest to $\mathbf{y}$.
 
+"Closest" here means Euclidean distance: the straight-line ruler. Whether Euclidean is the right ruler depends on whether all directions in $\mathbb{R}^n$ are equally noisy. We assume so for now. The Efficiency post (Chapter 11) shows what happens when they aren't.
+
 > **Intuition**: Imagine $\mathbf{y}$ as a point floating above the plane $\text{col}(\mathbf{X})$. The closest point on the plane to $\mathbf{y}$ is the foot of the perpendicular dropped from $\mathbf{y}$. Everything that follows is a variation on this drawing.
 
 The foot of the perpendicular is the **orthogonal projection** of $\mathbf{y}$ onto $\text{col}(\mathbf{X})$:

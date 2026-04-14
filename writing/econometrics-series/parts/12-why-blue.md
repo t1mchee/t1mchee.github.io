@@ -42,7 +42,9 @@ OLS minimises the sum of squared residuals. This is one optimisation problem. It
 
 BLUE is a different optimisation problem. Among linear unbiased estimators of $\beta$ — functions of the form $\mathbf{B}\mathbf{y}$ mapping $\mathbb{R}^n$ into $\mathbb{R}^k$ — find the one with minimum variance. This lives in $\mathbb{R}^k$ and is about the dispersion of $\hat\beta$ across repeated samples, not the fit on any single one. A priori, it has no reason to connect to squared residuals.
 
-Gauss-Markov says the two problems have the same solution under spherical errors. The perpendicular foot in $\mathbb{R}^n$ corresponds to the minimum-variance estimator in $\mathbb{R}^k$. Minimising squared residuals turns out to minimise coefficient variance, even though nothing in the squared-residual problem mentions variance. This is the actual content of the theorem, and it is not obvious from either language alone.
+Gauss-Markov says the two problems have the same solution under spherical errors. The perpendicular foot in $\mathbb{R}^n$ corresponds to the minimum-variance estimator in $\mathbb{R}^k$. Minimising squared residuals turns out to minimise coefficient variance, even though nothing in the squared-residual problem mentions variance.
+
+This is worth stopping on. One problem lives in $\mathbb{R}^n$ and asks which point in $\text{col}(\mathbf{X})$ is nearest to $\mathbf{y}$. The other lives in $\mathbb{R}^k$ and asks which linear function of $\mathbf{y}$ has the tightest sampling distribution. One is about a single dataset. The other is about what happens across all possible datasets. There is no a priori reason the same estimator should win both contests. That it does, under spherical errors and only under spherical errors, is the actual content of Gauss-Markov.
 
 The economist's "OLS is the best you can do" asserts minimum variance without naturally connecting to squared residuals. The geometer's "perpendicular projection is the closest point" gives a squared-distance answer without naturally connecting to variance. The theorem says these two optima align, and the alignment depends on the specific geometry of spherical noise.
 
@@ -56,43 +58,47 @@ Under non-spherical errors the alignment breaks. The perpendicular foot still mi
 
 The full running dictionary, complete. Earlier rows carry over from the Expectations, GMM, and Asymptotics chapters; Gauss-Markov rows appear at the bottom.
 
-| Probability / Statistics                                      | Linear Algebra / Geometry                                                                                                  |
-| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Sample average $\frac{1}{n}\mathbf{u}'\mathbf{v}$             | Sample inner product in $\mathbb{R}^n$                                                                                     |
-| $\mathbb{E}[XY]$                                                       | Population inner product $\langle X, Y \rangle$ in $L^2(P)$                                                                |
-| $\mathbb{E}[X^2]$                                                      | Squared norm $\|X\|^2$                                                                                                     |
-| $\mathbb{E}[(Y - g(X))^2]$                                             | Squared distance $\|Y - g(X)\|^2$                                                                                          |
-| $\mathbb{E}[Y \mid X]$                                                 | Orthogonal projection onto $L^2(\sigma(X))$                                                                                |
-| $X'\beta^*$ (linear projection)                               | Orthogonal projection onto $\text{span}\{1, X_1, \ldots, X_k\}$                                                            |
-| $\mathbb{E}[X\varepsilon] = 0$                                         | $\varepsilon$ orthogonal to linear span of $X$                                                                             |
-| $\mathbb{E}[\varepsilon \mid X] = 0$                                   | $\varepsilon$ orthogonal to $L^2(\sigma(X))$                                                                               |
-| Law of iterated expectations                                  | Tower property $P_1 P_2 = P_1$ for $V_1 \subseteq V_2$                                                                     |
-| Variance decomposition                                        | Pythagorean theorem                                                                                                        |
-| $R^2$                                                         | $\cos^2\theta$ between $\mathbf{y}$ and $\text{col}(\mathbf{X})$                                                           |
-| $F$-test                                                      | Ratio of squared projection lengths                                                                                        |
-| Omitted variable bias                                         | Oblique vs. orthogonal projection                                                                                          |
-| FWL theorem                                                   | Projection onto orthogonal complement                                                                                      |
-| Leverage $h_{ii}$                                             | Distance of observation from the centroid in the regressor metric                                                          |
-| $\text{SE}(\hat\beta_j)$                                      | Inverse length of $\mathbf{x}_j$ after partialling out other regressors                                                    |
-| Overfitting                                                   | $\text{col}(\mathbf{X})$ filling too much of $\mathbb{R}^n$                                                                |
-| Moment condition $\mathbb{E}[g(Z, \theta_0)] = 0$                      | Residual $\varepsilon(\theta_0)$ orthogonal to instruments in $L^2(P)$                                                     |
-| Just identification ($\ell = k$)                              | Exact projection; residual perpendicular to every instrument                                                               |
-| Overidentification ($\ell > k$)                               | Approximate projection; no $\theta$ makes the residual perpendicular to all instruments simultaneously                     |
-| Weighting matrix $W$                                          | Metric on moment space $\mathbb{R}^\ell$                                                                                   |
-| Efficient $W^* = \Sigma^{-1}$                                 | Mahalanobis metric; whitens moment space so noise is isotropic                                                             |
-| 2SLS                                                          | Composition: project $\mathbf{X}$ onto $\text{col}(\boldsymbol{Z})$, then $\mathbf{y}$ onto $\text{col}(\hat{\mathbf{X}})$ |
-| $J$-statistic                                                 | Squared Mahalanobis distance of $\bar g_n(\hat\theta)$ from origin                                                         |
-| Pseudo-true value                                             | Point on the moment manifold closest to the origin under $W$                                                               |
-| Consistency                                                   | Sample inner product converges to population inner product                                                                 |
-| Asymptotic normality                                          | Projected noise is asymptotically Gaussian (CLT)                                                                           |
-| Sandwich variance                                             | Noise anisotropy propagated through $(\mathbb{E}[XX'])^{-1}$                                                                        |
-| Homoskedastic variance                                        | Isotropic noise; sandwich collapses to $\sigma^2 (\mathbb{E}[XX'])^{-1}$                                                            |
-| Robust SE                                                     | Direct estimate of sandwich meat                                                                                           |
-| Clustered SE                                                  | Cluster as unit of i.i.d. draw; row-dependence correction                                                                  |
-| Delta method                                                  | Local linearisation of smooth functions of $\hat\beta_n$                                                                   |
-| Homoskedastic errors                                          | Spherical noise ball in $\mathbb{R}^n$                                                                                     |
-| Heteroskedasticity                                            | Noise ellipsoid stretched along coordinate axes                                                                            |
-| Autocorrelation                                               | Noise ellipsoid rotated off coordinate axes                                                                                |
-| GLS whitening ($\Omega^{-1/2}$)                               | Rescaling $\mathbb{R}^n$ so the noise ball becomes spherical                                                               |
-| BLUE (Gauss-Markov)                                           | Perpendicular foot is both closest point in $\mathbb{R}^n$ and minimum-variance estimator in $\beta$-space                 |
-| Unbiasedness constraint ($\mathbf{C}\mathbf{X} = \mathbf{0}$) | Alternative estimator must differ from OLS only in directions orthogonal to $\text{col}(\mathbf{X})$                       |
+The "First treated" column points to the chapter and section where each concept is unpacked. The "Insight flow" column flags the direction of intuition: **G→S** means the geometric picture illuminates the statistical concept; **S→G** means the statistical or economic intuition illuminates the geometry; **↔** means the two are equally informative and definitional.
+
+Most rows are G→S by design. The series is built on the wager that econometric statements become clearer once you can see them as projections, lengths, or angles. The ↔ entries flag the foundational cases where the two languages are definitional restatements of each other and the equivalence carries the work. The S→G entries (rare, and absent from this dictionary) would mark places where economic intuition does independent work the geometry alone cannot supply; their absence is itself a statement about what this framing is for.
+
+| Probability / Statistics | Linear Algebra / Geometry | First treated | Insight flow |
+|---|---|---|---|
+| Sample average $\frac{1}{n}\mathbf{u}'\mathbf{v}$ | Sample inner product in $\mathbb{R}^n$ | Ch 2, §1 | ↔ |
+| $\mathbb{E}[XY]$ | Population inner product $\langle X, Y \rangle$ in $L^2(P)$ | Ch 3, §3 | ↔ |
+| $\mathbb{E}[X^2]$ | Squared norm $\|X\|^2$ | Ch 3, §3 | ↔ |
+| $\mathbb{E}[(Y - g(X))^2]$ | Squared distance $\|Y - g(X)\|^2$ | Ch 3, §6 | ↔ |
+| $\mathbb{E}[Y \mid X]$ | Orthogonal projection onto $L^2(\sigma(X))$ | Ch 3, §6 | G→S |
+| $X'\beta^*$ (linear projection) | Orthogonal projection onto $\text{span}\{1, X_1, \ldots, X_k\}$ | Ch 3, §7 | G→S |
+| $\mathbb{E}[X\varepsilon] = 0$ | $\varepsilon$ orthogonal to linear span of $X$ | Ch 3, §5 | G→S |
+| $\mathbb{E}[\varepsilon \mid X] = 0$ | $\varepsilon$ orthogonal to $L^2(\sigma(X))$ | Ch 3, §5 | G→S |
+| Law of iterated expectations | Tower property $P_1 P_2 = P_1$ for $V_1 \subseteq V_2$ | Ch 4, §8 | G→S |
+| Variance decomposition | Pythagorean theorem | Ch 3, §6 | G→S |
+| $R^2$ | $\cos^2\theta$ between $\mathbf{y}$ and $\text{col}(\mathbf{X})$ | Ch 5, §11 | G→S |
+| $F$-test | Ratio of squared projection lengths | Ch 5, §12 | G→S |
+| Omitted variable bias | Oblique vs. orthogonal projection | Ch 4, §9 | ↔ |
+| FWL theorem | Projection onto orthogonal complement | Ch 4, §10 | G→S |
+| Leverage $h_{ii}$ | Distance of observation from the centroid in the regressor metric | Ch 5, §13 | G→S |
+| $\text{SE}(\hat\beta_j)$ | Inverse length of $\mathbf{x}_j$ after partialling out other regressors | Ch 5, §14 | G→S |
+| Overfitting | $\text{col}(\mathbf{X})$ filling too much of $\mathbb{R}^n$ | Ch 5, §15 | G→S |
+| Moment condition $\mathbb{E}[g(Z, \theta_0)] = 0$ | Residual $\varepsilon(\theta_0)$ orthogonal to instruments in $L^2(P)$ | Ch 6, §1 | ↔ |
+| Just identification ($\ell = k$) | Exact projection; residual perpendicular to every instrument | Ch 6, §2 | ↔ |
+| Overidentification ($\ell > k$) | Approximate projection; no $\theta$ makes the residual perpendicular to all instruments simultaneously | Ch 6, §3 | G→S |
+| Weighting matrix $W$ | Metric on moment space $\mathbb{R}^\ell$ | Ch 6, §5 | G→S |
+| Efficient $W^* = \Sigma^{-1}$ | Mahalanobis metric; whitens moment space so noise is isotropic | Ch 6, §5 | G→S |
+| 2SLS | Composition: project $\mathbf{X}$ onto $\text{col}(\boldsymbol{Z})$, then $\mathbf{y}$ onto $\text{col}(\hat{\mathbf{X}})$ | Ch 6, §6 / Ch 10 | G→S |
+| $J$-statistic | Squared Mahalanobis distance of $\bar g_n(\hat\theta)$ from origin | Ch 6, §7 | G→S |
+| Pseudo-true value | Point on the moment manifold closest to the origin under $W$ | Ch 6, §9 | G→S |
+| Consistency | Sample inner product converges to population inner product | Ch 7, §1 | G→S |
+| Asymptotic normality | Projected noise is asymptotically Gaussian (CLT) | Ch 7, §2 | G→S |
+| Sandwich variance | Noise anisotropy propagated through $(\mathbb{E}[XX'])^{-1}$ | Ch 7, §2 | G→S |
+| Homoskedastic variance | Isotropic noise; sandwich collapses to $\sigma^2 (\mathbb{E}[XX'])^{-1}$ | Ch 7, §2 | G→S |
+| Robust SE | Direct estimate of sandwich meat | Ch 7, §3 | ↔ |
+| Clustered SE | Cluster as unit of i.i.d. draw; row-dependence correction | Ch 7, §4 | ↔ |
+| Delta method | Local linearisation of smooth functions of $\hat\beta_n$ | Ch 7, §5 | G→S |
+| Homoskedastic errors | Spherical noise ball in $\mathbb{R}^n$ | Ch 11 | G→S |
+| Heteroskedasticity | Noise ellipsoid stretched along coordinate axes | Ch 11 | ↔ |
+| Autocorrelation | Noise ellipsoid rotated off coordinate axes | Ch 11 | ↔ |
+| GLS whitening ($\Omega^{-1/2}$) | Rescaling $\mathbb{R}^n$ so the noise ball becomes spherical | Ch 11 | G→S |
+| BLUE (Gauss-Markov) | Perpendicular foot is both closest point in $\mathbb{R}^n$ and minimum-variance estimator in $\beta$-space | Ch 12 | G→S |
+| Unbiasedness constraint ($\mathbf{C}\mathbf{X} = \mathbf{0}$) | Alternative estimator must differ from OLS only in directions orthogonal to $\text{col}(\mathbf{X})$ | Ch 12 | G→S |

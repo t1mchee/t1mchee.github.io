@@ -1,3 +1,11 @@
+Here is a fact that should bother you. Run a regression of wages on education and experience. Now add a column of pure noise: numbers from a random number generator with no relationship to anything. $R^2$ goes up. It always goes up. Why?
+
+Here is another. You can prove that OLS minimises the sum of squared residuals. Separately, you can prove that OLS has the smallest variance among linear unbiased estimators. These are two different optimisation problems. One is about fitting data in a single sample. The other is about dispersion across hypothetical repetitions. There is no obvious reason they should have the same answer. Under certain conditions they do. What are those conditions, and what connects fitting well to estimating precisely?
+
+Both questions have the same answer, and the answer is a picture. OLS is an orthogonal projection. Once you see that, every result in the econometrics canon (Gauss-Markov, FWL, OVB, 2SLS, GLS, GMM) becomes a variation on one drawing.
+
+---
+
 Econometrics is taught to economics undergraduates anecdotally, anchored to real-life examples. Much of the foundational intuition economists carry stems from that.
 
 1. OLS is introduced as "the line that minimises squared residuals" rather than the orthogonal projection of $y$ onto $\text{col}(X)$.

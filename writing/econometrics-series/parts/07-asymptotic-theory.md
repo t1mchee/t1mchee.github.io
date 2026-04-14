@@ -50,7 +50,9 @@ $$V = \sigma^2 (\mathbb{E}[XX'])^{-1}$$
 
 Clean. This is the population analogue of the finite-sample $\sigma^2 (\mathbf{X}'\mathbf{X})^{-1}$ from Gauss-Markov. When noise is isotropic, the regressor configuration $\mathbb{E}[XX']$ is the only thing determining variance, and the inverse shows up once.
 
-Now break homoskedasticity. The noise ball stops being a sphere. $\mathbb{E}[\varepsilon^2 | X]$ depends on $X$, so $\mathbb{E}[\varepsilon^2 XX']$ no longer factorises into $\sigma^2 \cdot \mathbb{E}[XX']$. The meat now carries directional noise information: it encodes where in regressor space the noise is bigger. The bread doesn't cancel the meat anymore, and the variance formula carries the full anisotropy.
+Now break homoskedasticity. Concretely: regress wages on education and let the true error variance double for every year of schooling. Computing standard errors as $\sigma^2(\mathbf{X}'\mathbf{X})^{-1}$ assumes every observation contributes the same amount of noise. The PhDs in the sample are noisier than the high-school graduates by a known factor, but the naive formula treats them as equally informative. Reported standard errors end up too tight in some coefficient directions and too loose in others, and which directions get distorted depends on how the noise pattern lines up with the regressor configuration.
+
+The sandwich corrects for this. $\mathbb{E}[\varepsilon^2 | X]$ now depends on $X$, so $\mathbb{E}[\varepsilon^2 XX']$ no longer factorises into $\sigma^2 \cdot \mathbb{E}[XX']$. The meat carries directional noise information: it encodes where in regressor space the noise is bigger. The bread doesn't cancel the meat anymore, and the variance formula carries the full anisotropy.
 
 Each piece, geometrically. The bread $(\mathbb{E}[XX'])^{-1}$ is the inverse Gram matrix of the regressors; it rotates between coordinate directions and regressor directions. The meat $\mathbb{E}[\varepsilon^2 XX']$ carries the shape of the noise ellipsoid in regressor coordinates. The sandwich takes the shape, rotates it into the right coefficient frame, and produces the variance of $\hat\beta$.
 

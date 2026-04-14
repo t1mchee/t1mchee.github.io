@@ -16,6 +16,8 @@ Geometrically, $R^2 = \cos^2\theta$ where $\theta$ is the angle between $\mathbf
 
 > **Intuition**: $R^2$ goes up mechanically as we add regressors because enlarging $\text{col}(\mathbf{X})$ can only shrink the angle between $\mathbf{y}$ and the subspace. A bigger subspace contains more vectors, one of them closer to $\mathbf{y}$ than anything in the smaller subspace could be. Adjusted $R^2$ exists because random regressors reduce the angle just by adding dimensions, even when they carry no information. The adjustment subtracts the mechanical shrinkage so that $\bar R^2$ rises only when the added regressors do genuine work.
 
+This is the puzzle from the introduction resolved in one sentence of geometry. A bigger subspace is always at least as close to any given vector, so the angle can only shrink. Adding pure noise as a regressor expands $\text{col}(\mathbf{X})$ by one dimension; the projection of $\mathbf{y}$ has slightly more room and inevitably lands slightly closer. The mechanical inflation of $R^2$ has nothing to do with the noise carrying information. It is a property of projection onto a higher-dimensional subspace, full stop.
+
 ---
 
 ## 12. The $F$-test as Comparison of Projection Lengths
@@ -70,7 +72,7 @@ Leverage measures potential, not realised, influence. A high-leverage observatio
 
 Under spherical errors, $\text{Var}(\hat\beta | \mathbf{X}) = \sigma^2 (\mathbf{X}'\mathbf{X})^{-1}$. The diagonal entry $[(\mathbf{X}'\mathbf{X})^{-1}]_{jj}$ is $\text{Var}(\hat\beta_j | \mathbf{X}) / \sigma^2$. FWL gives its geometric content directly.
 
-From FWL, the coefficient on $\mathbf{x}_j$ (the $j$-th column of $\mathbf{X}$) from the full regression equals the coefficient from a single-regressor OLS of $\mathbf{y}$ on $\tilde{\mathbf{x}}_j = \mathbf{M}_{-j} \mathbf{x}_j$, the residual from regressing $\mathbf{x}_j$ on all the other regressors. A single-regressor OLS on the residualised setup has variance:
+This is where FWL pays a second dividend. Post 04 used FWL to flatten the tilted room of correlated controls so the marginal effect of $\mathbf{x}_j$ could be read off cleanly. The same flattening sets the precision of $\hat\beta_j$. From FWL, the coefficient on $\mathbf{x}_j$ (the $j$-th column of $\mathbf{X}$) from the full regression equals the coefficient from a single-regressor OLS of $\mathbf{y}$ on $\tilde{\mathbf{x}}_j = \mathbf{M}_{-j} \mathbf{x}_j$, the residual from regressing $\mathbf{x}_j$ on all the other regressors. A single-regressor OLS on the residualised setup has variance:
 
 $$\text{Var}(\hat\beta_j | \mathbf{X}) = \frac{\sigma^2}{\tilde{\mathbf{x}}_j'\tilde{\mathbf{x}}_j} = \frac{\sigma^2}{\|\tilde{\mathbf{x}}_j\|^2}$$
 
