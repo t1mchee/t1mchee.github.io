@@ -23,6 +23,57 @@
 
   let navLinks = [];
 
+  /**
+   * marked.js interprets underscores as emphasis; that breaks LaTeX subscripts
+   * inside $...$ and $$...$$. Strip math to opaque tokens before Markdown, restore after.
+   */
+  function protectMathDelimiters(md) {
+    const store = [];
+    const token = (kind, id) => `MATH${kind}${id}MATHEND`;
+
+    let s = md.replace(/\$\$([\s\S]*?)\$\$/g, (_, body) => {
+      const id = store.length;
+      store.push(`$$${body}$$`);
+      return token("D", id);
+    });
+
+    let out = "";
+    for (let i = 0; i < s.length; i += 1) {
+      const ch = s[i];
+      if (ch === "$" && s[i + 1] === "$") {
+        out += "$$";
+        i += 1;
+        continue;
+      }
+      if (ch === "$") {
+        if (i > 0 && s[i - 1] === "\\") {
+          out += ch;
+          continue;
+        }
+        const j = s.indexOf("$", i + 1);
+        if (j === -1) {
+          out += ch;
+          continue;
+        }
+        const id = store.length;
+        store.push(s.slice(i, j + 1));
+        out += token("I", id);
+        i = j;
+        continue;
+      }
+      out += ch;
+    }
+
+    return { text: out, store };
+  }
+
+  function restoreMathDelimiters(html, store) {
+    return html.replace(/MATH(D|I)(\d+)MATHEND/g, (_, kind, idStr) => {
+      const id = Number(idStr);
+      return store[id] !== undefined ? store[id] : "";
+    });
+  }
+
   function setActive(index) {
     navLinks.forEach((a, i) => {
       a.classList.toggle("active", i === index);
@@ -36,9 +87,12 @@
     renderMathInElement(article, {
       delimiters: [
         { left: "$$", right: "$$", display: true },
-        { left: "$", right: "$", display: false }
+        { left: "$", right: "$", display: false },
+        { left: "\\(", right: "\\)", display: false },
+        { left: "\\[", right: "\\]", display: true }
       ],
-      throwOnError: false
+      throwOnError: false,
+      strict: false
     });
   }
 
@@ -57,7 +111,8 @@
         throw new Error(`Could not load ${part.file} (${res.status})`);
       }
       const md = await res.text();
-      article.innerHTML = marked.parse(md);
+      const { text: mdSafe, store } = protectMathDelimiters(md);
+      article.innerHTML = restoreMathDelimiters(marked.parse(mdSafe), store);
       setActive(i);
       renderMath();
       article.scrollTop = 0;
