@@ -226,10 +226,9 @@ img {
 .profile-photo {
   width: 180px;
   height: 180px;
-  border-radius: 8px;
+  border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
-  filter: grayscale(100%) brightness(1.15);
 }
 
 .intro-text {
