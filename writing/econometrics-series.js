@@ -80,6 +80,98 @@
     });
   }
 
+  function isExampleHeading(el) {
+    if (!el || (el.tagName !== "H2" && el.tagName !== "H3")) {
+      return false;
+    }
+    const t = el.textContent.trim();
+    if (!/\bexample\b/i.test(t)) {
+      return false;
+    }
+    return /\bworked\b/i.test(t) || /^a\s+worked/i.test(t);
+  }
+
+  function collectExampleSiblingsAfter(wrap, startTagName) {
+    const startLevel = startTagName === "H2" ? 2 : 3;
+    let n = wrap.nextSibling;
+    while (n) {
+      if (n.nodeType !== Node.ELEMENT_NODE) {
+        const next = n.nextSibling;
+        wrap.appendChild(n);
+        n = next;
+        continue;
+      }
+      const tag = n.tagName;
+      if (tag === "HR" || tag === "H1") {
+        break;
+      }
+      if (tag === "H2") {
+        break;
+      }
+      if (tag === "H3" && startLevel === 3) {
+        break;
+      }
+      const next = n.nextSibling;
+      wrap.appendChild(n);
+      n = next;
+    }
+  }
+
+  function decorateSeriesArticle(root) {
+    root.querySelectorAll("blockquote").forEach((bq) => {
+      const strong = bq.querySelector("p:first-child > strong:first-child");
+      if (strong && /^Intuition$/i.test(strong.textContent.trim())) {
+        bq.classList.add("series-callout", "series-callout--intuition");
+      }
+    });
+
+    [...root.querySelectorAll("h2, h3")].forEach((h) => {
+      if (!isExampleHeading(h) || h.closest(".series-callout--example")) {
+        return;
+      }
+      const wrap = document.createElement("div");
+      wrap.className = "series-callout series-callout--example";
+      wrap.setAttribute("role", "note");
+      h.replaceWith(wrap);
+      wrap.appendChild(h);
+      collectExampleSiblingsAfter(wrap, h.tagName);
+    });
+
+    [...root.querySelectorAll("p")].forEach((p) => {
+      if (p.closest(".series-callout--example")) {
+        return;
+      }
+      const strong = p.querySelector("strong:first-child");
+      if (!strong) {
+        return;
+      }
+      if (!/^worked example/i.test(strong.textContent.trim())) {
+        return;
+      }
+      const wrap = document.createElement("div");
+      wrap.className = "series-callout series-callout--example";
+      wrap.setAttribute("role", "note");
+      p.replaceWith(wrap);
+      wrap.appendChild(p);
+      let n = wrap.nextSibling;
+      while (n) {
+        if (n.nodeType !== Node.ELEMENT_NODE) {
+          const next = n.nextSibling;
+          wrap.appendChild(n);
+          n = next;
+          continue;
+        }
+        const tag = n.tagName;
+        if (tag === "H2" || tag === "H3" || tag === "HR") {
+          break;
+        }
+        const next = n.nextSibling;
+        wrap.appendChild(n);
+        n = next;
+      }
+    });
+  }
+
   function renderMath() {
     if (typeof renderMathInElement === "undefined") {
       return;
@@ -113,6 +205,7 @@
       const md = await res.text();
       const { text: mdSafe, store } = protectMathDelimiters(md);
       article.innerHTML = restoreMathDelimiters(marked.parse(mdSafe), store);
+      decorateSeriesArticle(article);
       setActive(i);
       renderMath();
       article.scrollTop = 0;
