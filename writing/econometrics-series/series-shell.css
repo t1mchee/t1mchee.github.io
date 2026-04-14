@@ -1,0 +1,118 @@
+.hidden {
+  display: none !important;
+}
+
+/* Econometrics series: wide layout + left nav (scoped to .series-page) */
+.series-page {
+  max-width: 1040px;
+}
+
+.series-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.75rem;
+  margin-top: 1.5rem;
+}
+
+.series-nav {
+  flex: 0 0 220px;
+  position: sticky;
+  top: 1rem;
+  align-self: flex-start;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  padding-right: 0.35rem;
+  border-right: 1px solid var(--border);
+}
+
+.series-nav-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  margin: 0 0 0.5rem 0.15rem;
+}
+
+.series-nav ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.series-nav li {
+  margin-bottom: 0.15rem;
+}
+
+.series-nav a {
+  display: block;
+  padding: 0.4rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.88rem;
+  line-height: 1.35;
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.series-nav a:hover {
+  color: var(--text);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.series-nav a.active {
+  color: var(--text);
+  font-weight: 600;
+  background: var(--code-bg);
+}
+
+.series-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.series-article {
+  padding-bottom: 3rem;
+}
+
+.series-article img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1.25rem auto;
+}
+
+.series-loading {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.series-error {
+  color: #a33;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 720px) {
+  .series-layout {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .series-nav {
+    position: relative;
+    top: auto;
+    max-height: none;
+    width: 100%;
+    flex: none;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.75rem;
+    padding-right: 0;
+  }
+
+  .series-nav ol {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+}
