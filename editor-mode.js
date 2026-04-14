@@ -13,7 +13,10 @@
     posts: [],
     ceramics: [],
     loadedPostSlug: "",
-    loadedCeramicId: ""
+    loadedCeramicId: "",
+    loadedPostIsEditorManaged: false,
+    loadedPostRawHtml: "",
+    loadedCeramicSourceImage: ""
   };
 
   const el = {
@@ -104,6 +107,10 @@
 
   function sanitizeFileName(value) {
     return value.replace(/[^a-zA-Z0-9._-]/g, "-");
+  }
+
+  function escapeRegex(value) {
+    return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }
 
   async function sha256Hex(text) {
@@ -227,8 +234,7 @@
   }
 
   function buildPostListItem(meta) {
-    return `      <!-- EDITOR_POST:${meta.slug} -->
-      <li>
+    return `      <li>
         <a href="writing/${escapeHtml(meta.slug)}.html" class="post-title">${escapeHtml(meta.title)}</a>
         <span class="post-tag">${escapeHtml(meta.tag)}</span>
         <time class="post-date" datetime="${escapeHtml(meta.dateIso)}">${escapeHtml(meta.dateDisplay)}</time>
@@ -286,8 +292,7 @@ ${renderedHtml}
   }
 
   function buildCeramicBlock(entry) {
-    return `      <!-- CERAMIC_ENTRY:${entry.id} -->
-      <div class="ceramics-piece">
+    return `      <div class="ceramics-piece">
         <img src="ceramics/${escapeHtml(entry.imageFileName)}" alt="${escapeHtml(entry.alt)}" loading="lazy">
         <div class="piece-info">
           <h3>${escapeHtml(entry.title)}</h3>
@@ -299,9 +304,9 @@ ${renderedHtml}
 
   function upsertPostInWritingIndex(html, meta) {
     const block = buildPostListItem(meta);
-    const markerRegex = new RegExp(`\\s*<!--\\s*EDITOR_POST:${meta.slug}\\s*-->[\\s\\S]*?<\\/li>`, "m");
-    if (markerRegex.test(html)) {
-      return html.replace(markerRegex, `\n${block}`);
+    const slugRegex = new RegExp(`\\s*(?:<!--\\s*EDITOR_POST:${meta.slug}\\s*-->\\s*)?<li>[\\s\\S]*?<a href="writing/${meta.slug}\\.html" class="post-title">[\\s\\S]*?<\\/li>`, "m");
+    if (slugRegex.test(html)) {
+      return html.replace(slugRegex, `\n${block}`);
     }
     const anchor = '<ul class="writing-list">';
     if (!html.includes(anchor)) {
@@ -312,9 +317,10 @@ ${renderedHtml}
 
   function upsertCeramicInIndex(html, entry) {
     const block = buildCeramicBlock(entry);
-    const markerRegex = new RegExp(`\\s*<!--\\s*CERAMIC_ENTRY:${entry.id}\\s*-->[\\s\\S]*?<\\/div>\\s*<\\/div>`, "m");
-    if (markerRegex.test(html)) {
-      return html.replace(markerRegex, `\n${block}`);
+    const targetImage = escapeRegex(entry.sourceImageFileName || entry.imageFileName);
+    const imageRegex = new RegExp(`\\s*<div class="ceramics-piece">[\\s\\S]*?<img src="ceramics/${targetImage}"[^>]*>[\\s\\S]*?<\\/div>\\s*<\\/div>`, "m");
+    if (imageRegex.test(html)) {
+      return html.replace(imageRegex, `\n${block}`);
     }
     const anchor = '<div class="ceramics-gallery">';
     if (!html.includes(anchor)) {
@@ -323,35 +329,37 @@ ${renderedHtml}
     return html.replace(anchor, `${anchor}\n\n${block}`);
   }
 
-  function parseEditorPostsFromWritingIndex(html) {
+  function parsePostsFromWritingIndex(html) {
     const posts = [];
-    const regex = /<!--\s*EDITOR_POST:([a-z0-9-]+)\s*-->\s*<li>[\s\S]*?<a href="writing\/[^"]+" class="post-title">([^<]+)<\/a>[\s\S]*?<span class="post-tag">([^<]*)<\/span>[\s\S]*?<time class="post-date" datetime="([^"]+)">([^<]+)<\/time>[\s\S]*?<p class="post-description">([^<]*)<\/p>[\s\S]*?<\/li>/g;
+    const regex = /<li>[\s\S]*?<a href="writing\/([a-z0-9-]+)\.html" class="post-title">([^<]+)<\/a>[\s\S]*?<span class="post-tag">([^<]*)<\/span>[\s\S]*?<time class="post-date" datetime="([^"]+)">([^<]+)<\/time>[\s\S]*?<p class="post-description">([^<]*)<\/p>[\s\S]*?<\/li>/g;
     let match;
     while ((match = regex.exec(html)) !== null) {
       posts.push({
-        slug: match[1],
-        title: match[2],
-        tag: match[3],
-        dateIso: match[4],
-        dateDisplay: match[5],
-        description: match[6]
+        slug: sanitizeSlug(match[1]),
+        title: match[2].trim(),
+        tag: match[3].trim(),
+        dateIso: match[4].trim(),
+        dateDisplay: match[5].trim(),
+        description: match[6].trim()
       });
     }
     return posts;
   }
 
-  function parseEditorCeramicsFromIndex(html) {
+  function parseCeramicsFromIndex(html) {
     const entries = [];
-    const regex = /<!--\s*CERAMIC_ENTRY:([a-z0-9-]+)\s*-->\s*<div class="ceramics-piece">[\s\S]*?<img src="ceramics\/([^"]+)" alt="([^"]*)" loading="lazy">[\s\S]*?<h3>([^<]*)<\/h3>[\s\S]*?<p>([^<]*)<\/p>[\s\S]*?<span class="piece-meta">([^<]*)<\/span>[\s\S]*?<\/div>\s*<\/div>/g;
+    const regex = /<div class="ceramics-piece">[\s\S]*?<img src="ceramics\/([^"]+)" alt="([^"]*)" loading="lazy">[\s\S]*?<h3>([^<]*)<\/h3>[\s\S]*?<p>([^<]*)<\/p>[\s\S]*?<span class="piece-meta">([^<]*)<\/span>[\s\S]*?<\/div>\s*<\/div>/g;
     let match;
     while ((match = regex.exec(html)) !== null) {
+      const imageFileName = match[1].trim();
+      const baseName = imageFileName.includes(".") ? imageFileName.slice(0, imageFileName.lastIndexOf(".")) : imageFileName;
       entries.push({
-        id: match[1],
-        imageFileName: match[2],
-        alt: match[3],
-        title: match[4],
-        description: match[5],
-        meta: match[6]
+        id: sanitizeSlug(baseName),
+        imageFileName,
+        alt: match[2].trim(),
+        title: match[3].trim(),
+        description: match[4].trim(),
+        meta: match[5].trim()
       });
     }
     return entries;
@@ -362,7 +370,7 @@ ${renderedHtml}
     if (!state.posts.length) {
       const option = document.createElement("option");
       option.value = "";
-      option.textContent = "No editor-created posts found";
+      option.textContent = "No posts found";
       el.editPostSelect.appendChild(option);
       return;
     }
@@ -379,7 +387,7 @@ ${renderedHtml}
     if (!state.ceramics.length) {
       const option = document.createElement("option");
       option.value = "";
-      option.textContent = "No editor-created ceramics found";
+      option.textContent = "No ceramics entries found";
       el.editCeramicSelect.appendChild(option);
       return;
     }
@@ -400,8 +408,8 @@ ${renderedHtml}
     }
     state.writingIndex = writing.content;
     state.ceramicsIndex = ceramics.content;
-    state.posts = parseEditorPostsFromWritingIndex(state.writingIndex);
-    state.ceramics = parseEditorCeramicsFromIndex(state.ceramicsIndex);
+    state.posts = parsePostsFromWritingIndex(state.writingIndex);
+    state.ceramics = parseCeramicsFromIndex(state.ceramicsIndex);
     fillPostSelect();
     fillCeramicSelect();
     setStatus(el.gitStatus, "Connected. Indexes refreshed.", "success");
@@ -425,7 +433,7 @@ ${renderedHtml}
     const metaMatch = html.match(/<!--\s*EDITOR_META:([\s\S]*?)\s*-->/);
     const markdownMatch = html.match(/<!--\s*EDITOR_MARKDOWN_B64:([A-Za-z0-9+/=]+)\s*-->/);
     if (!metaMatch || !markdownMatch) {
-      throw new Error("This post was not created by editor mode.");
+      throw new Error("No editor metadata found.");
     }
 
     let meta;
@@ -476,7 +484,7 @@ ${renderedHtml}
     await putTextFile("writing.html", newWritingIndex, `Update writing index: ${meta.title}`);
 
     state.writingIndex = newWritingIndex;
-    state.posts = parseEditorPostsFromWritingIndex(state.writingIndex);
+    state.posts = parsePostsFromWritingIndex(state.writingIndex);
     fillPostSelect();
     setStatus(el.postStatus, `Published ${meta.title}.`, "success");
   }
@@ -493,15 +501,44 @@ ${renderedHtml}
       throw new Error("Could not find selected post file.");
     }
 
-    const parsed = readPostMetaFromEditorHtml(postFile.content);
     state.loadedPostSlug = slug;
-    el.editPostTitle.value = parsed.meta.title || "";
-    el.editPostTag.value = parsed.meta.tag || "";
-    el.editPostDateIso.value = parsed.meta.dateIso || "";
-    el.editPostDateDisplay.value = parsed.meta.dateDisplay || "";
-    el.editPostDescription.value = parsed.meta.description || "";
-    el.editPostMarkdown.value = parsed.markdown || "";
-    setStatus(el.editPostStatus, `Loaded ${slug}.`, "success");
+    const indexMeta = state.posts.find((post) => post.slug === slug);
+    if (!indexMeta) {
+      throw new Error("Post metadata not found in writing index.");
+    }
+
+    el.editPostTitle.value = indexMeta.title || "";
+    el.editPostTag.value = indexMeta.tag || "";
+    el.editPostDateIso.value = indexMeta.dateIso || "";
+    el.editPostDateDisplay.value = indexMeta.dateDisplay || "";
+    el.editPostDescription.value = indexMeta.description || "";
+
+    state.loadedPostRawHtml = postFile.content;
+    state.loadedPostIsEditorManaged = false;
+
+    try {
+      const parsed = readPostMetaFromEditorHtml(postFile.content);
+      el.editPostMarkdown.value = parsed.markdown || "";
+      state.loadedPostIsEditorManaged = true;
+      setStatus(el.editPostStatus, `Loaded ${slug} (markdown mode).`, "success");
+      return;
+    } catch (error) {
+      const bodyMatch = postFile.content.match(/<div class="post-header">[\s\S]*?<\/div>\s*([\s\S]*?)\s*<\/div>\s*<script src="\.\.\/dot-grid\.js"><\/script>/);
+      if (!bodyMatch) {
+        throw new Error("Could not parse post body. This post may use a custom structure.");
+      }
+      el.editPostMarkdown.value = bodyMatch[1].trim();
+      setStatus(el.editPostStatus, `Loaded ${slug} (HTML body mode).`, "success");
+    }
+  }
+
+  function updateNonEditorPostHtml(originalHtml, meta, bodyHtml) {
+    let updated = originalHtml;
+    updated = updated.replace(/<title>[\s\S]*?<\/title>/, `<title>${escapeHtml(meta.title)} - Tim Chee</title>`);
+    updated = updated.replace(/<h1>[\s\S]*?<\/h1>/, `<h1>${escapeHtml(meta.title)}</h1>`);
+    updated = updated.replace(/<p class="post-meta">[\s\S]*?<\/p>/, `<p class="post-meta">${escapeHtml(meta.dateDisplay)}</p>`);
+    updated = updated.replace(/(<div class="post-header">[\s\S]*?<\/div>)([\s\S]*?)(\s*<\/div>\s*<script src="\.\.\/dot-grid\.js"><\/script>)/, `$1\n\n${bodyHtml}\n$3`);
+    return updated;
   }
 
   async function saveEditedPost() {
@@ -523,14 +560,16 @@ ${renderedHtml}
     }
 
     setStatus(el.editPostStatus, "Saving post changes...", "");
-    const newPostHtml = buildPostHtml(meta, markdown);
+    const newPostHtml = state.loadedPostIsEditorManaged
+      ? buildPostHtml(meta, markdown)
+      : updateNonEditorPostHtml(state.loadedPostRawHtml, meta, markdown);
     const updatedWritingIndex = upsertPostInWritingIndex(state.writingIndex, meta);
 
     await putTextFile(`writing/${meta.slug}.html`, newPostHtml, `Edit post: ${meta.title}`);
     await putTextFile("writing.html", updatedWritingIndex, `Update writing index: ${meta.title}`);
 
     state.writingIndex = updatedWritingIndex;
-    state.posts = parseEditorPostsFromWritingIndex(state.writingIndex);
+    state.posts = parsePostsFromWritingIndex(state.writingIndex);
     fillPostSelect();
     setStatus(el.editPostStatus, `Saved ${meta.slug}.`, "success");
   }
@@ -560,7 +599,7 @@ ${renderedHtml}
 
     const ext = extensionFromFileName(imageFile.name) || "png";
     const imageFileName = `${id}.${sanitizeFileName(ext)}`;
-    const entry = { id, title, alt, meta, description, imageFileName };
+    const entry = { id, title, alt, meta, description, imageFileName, sourceImageFileName: imageFileName };
 
     setStatus(el.ceramicStatus, "Publishing ceramic piece...", "");
 
@@ -569,7 +608,7 @@ ${renderedHtml}
     await putTextFile("ceramics.html", newCeramicsIndex, `Add ceramic piece: ${title}`);
 
     state.ceramicsIndex = newCeramicsIndex;
-    state.ceramics = parseEditorCeramicsFromIndex(state.ceramicsIndex);
+    state.ceramics = parseCeramicsFromIndex(state.ceramicsIndex);
     fillCeramicSelect();
     setStatus(el.ceramicStatus, `Published ceramic piece "${title}".`, "success");
   }
@@ -586,6 +625,7 @@ ${renderedHtml}
     }
 
     state.loadedCeramicId = id;
+    state.loadedCeramicSourceImage = piece.imageFileName;
     el.editCeramicTitle.value = piece.title;
     el.editCeramicAlt.value = piece.alt;
     el.editCeramicMeta.value = piece.meta;
@@ -625,7 +665,8 @@ ${renderedHtml}
       alt,
       meta,
       description,
-      imageFileName
+      imageFileName,
+      sourceImageFileName: state.loadedCeramicSourceImage || current.imageFileName
     };
 
     setStatus(el.editCeramicStatus, "Saving ceramic changes...", "");
@@ -633,7 +674,7 @@ ${renderedHtml}
     await putTextFile("ceramics.html", newCeramicsIndex, `Edit ceramic piece: ${title}`);
 
     state.ceramicsIndex = newCeramicsIndex;
-    state.ceramics = parseEditorCeramicsFromIndex(state.ceramicsIndex);
+    state.ceramics = parseCeramicsFromIndex(state.ceramicsIndex);
     fillCeramicSelect();
     setStatus(el.editCeramicStatus, `Saved ceramic "${title}".`, "success");
   }
