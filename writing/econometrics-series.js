@@ -91,13 +91,19 @@
     return /\bworked\b/i.test(t) || /^a\s+worked/i.test(t);
   }
 
-  function collectExampleSiblingsAfter(wrap, startTagName) {
-    const startLevel = startTagName === "H2" ? 2 : 3;
-    let n = wrap.nextSibling;
+  /**
+   * Move nodes following `details` into `inner` until the next section boundary.
+   * @param {HTMLElement} details
+   * @param {HTMLElement} inner
+   * @param {"H2"|"H3"|null} startTagName  null = paragraph-started example (stop at any h2/h3/hr)
+   */
+  function moveExampleFollowingSiblings(details, inner, startTagName) {
+    const startLevel = startTagName === "H2" ? 2 : startTagName === "H3" ? 3 : 0;
+    let n = details.nextSibling;
     while (n) {
       if (n.nodeType !== Node.ELEMENT_NODE) {
         const next = n.nextSibling;
-        wrap.appendChild(n);
+        inner.appendChild(n);
         n = next;
         continue;
       }
@@ -105,16 +111,35 @@
       if (tag === "HR" || tag === "H1") {
         break;
       }
-      if (tag === "H2") {
-        break;
-      }
-      if (tag === "H3" && startLevel === 3) {
-        break;
+      if (startLevel === 0) {
+        if (tag === "H2" || tag === "H3") {
+          break;
+        }
+      } else {
+        if (tag === "H2") {
+          break;
+        }
+        if (tag === "H3" && startLevel === 3) {
+          break;
+        }
       }
       const next = n.nextSibling;
-      wrap.appendChild(n);
+      inner.appendChild(n);
       n = next;
     }
+  }
+
+  function buildExampleDetails() {
+    const details = document.createElement("details");
+    details.className = "series-callout series-callout--example";
+    details.open = true;
+    const summary = document.createElement("summary");
+    summary.className = "series-example-summary";
+    const inner = document.createElement("div");
+    inner.className = "series-example-body";
+    details.appendChild(summary);
+    details.appendChild(inner);
+    return { details, summary, inner };
   }
 
   function decorateSeriesArticle(root) {
@@ -129,12 +154,10 @@
       if (!isExampleHeading(h) || h.closest(".series-callout--example")) {
         return;
       }
-      const wrap = document.createElement("div");
-      wrap.className = "series-callout series-callout--example";
-      wrap.setAttribute("role", "note");
-      h.replaceWith(wrap);
-      wrap.appendChild(h);
-      collectExampleSiblingsAfter(wrap, h.tagName);
+      const { details, summary, inner } = buildExampleDetails();
+      h.replaceWith(details);
+      summary.appendChild(h);
+      moveExampleFollowingSiblings(details, inner, h.tagName);
     });
 
     [...root.querySelectorAll("p")].forEach((p) => {
@@ -148,27 +171,10 @@
       if (!/^worked example/i.test(strong.textContent.trim())) {
         return;
       }
-      const wrap = document.createElement("div");
-      wrap.className = "series-callout series-callout--example";
-      wrap.setAttribute("role", "note");
-      p.replaceWith(wrap);
-      wrap.appendChild(p);
-      let n = wrap.nextSibling;
-      while (n) {
-        if (n.nodeType !== Node.ELEMENT_NODE) {
-          const next = n.nextSibling;
-          wrap.appendChild(n);
-          n = next;
-          continue;
-        }
-        const tag = n.tagName;
-        if (tag === "H2" || tag === "H3" || tag === "HR") {
-          break;
-        }
-        const next = n.nextSibling;
-        wrap.appendChild(n);
-        n = next;
-      }
+      const { details, summary, inner } = buildExampleDetails();
+      p.replaceWith(details);
+      summary.appendChild(p);
+      moveExampleFollowingSiblings(details, inner, null);
     });
   }
 
