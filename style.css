@@ -146,6 +146,9 @@ li > ul, li > ol {
 
 .coursework-list .course-detail {
   display: block;
+  margin-top: 0.05rem;
+  font-weight: 400;
+  color: #6B5E54;
 }
 
 /* ─── Horizontal Rule ─── */
