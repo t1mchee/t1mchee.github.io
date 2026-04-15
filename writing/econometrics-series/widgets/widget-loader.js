@@ -128,8 +128,129 @@
     }
   }
 
+  /* ---------- shared chrome helpers used by every widget ---------- */
+
+  /**
+   * Render KaTeX inside the given root, using the same delimiters and
+   * options as the series shell. Safe to call even if KaTeX's auto-render
+   * extension has not loaded yet (no-op in that case).
+   */
+  function renderMath(root) {
+    if (typeof renderMathInElement !== "function") return;
+    try {
+      renderMathInElement(root, {
+        delimiters: [
+          { left: "$$", right: "$$", display: true },
+          { left: "$",  right: "$",  display: false },
+          { left: "\\(", right: "\\)", display: false },
+          { left: "\\[", right: "\\]", display: true }
+        ],
+        throwOnError: false,
+        strict: false
+      });
+    } catch (e) {
+      console.warn("Widget KaTeX render failed:", e);
+    }
+  }
+
+  /**
+   * Build a horizontal legend element with a coloured swatch and a KaTeX
+   * label per entry:
+   *
+   *   legend([
+   *     { color: "#3b5a7a", math: "\\mathbf{y}" },
+   *     { color: "#5a7a3b", math: "\\hat{\\mathbf{y}}", dashed: true },
+   *     ...
+   *   ])
+   *
+   * Returns a DOM node ready to append. The caller should run renderMath()
+   * on the widget root after mounting so the KaTeX delimiters are replaced.
+   */
+  function legend(entries) {
+    var wrap = document.createElement("div");
+    wrap.className = "econ-widget__legend";
+    for (var i = 0; i < entries.length; i++) {
+      var e = entries[i];
+      var item = document.createElement("span");
+      item.className = "econ-widget__legend-item";
+      if (e.dashed) item.classList.add("econ-widget__legend-item--dashed");
+      if (e.dotted) item.classList.add("econ-widget__legend-item--dotted");
+
+      var swatch = document.createElement("span");
+      swatch.className = "econ-widget__legend-swatch";
+      swatch.style.setProperty("--swatch-color", e.color);
+      item.appendChild(swatch);
+
+      var label = document.createElement("span");
+      label.className = "econ-widget__legend-label";
+      label.textContent = "$" + e.math + "$";
+      item.appendChild(label);
+
+      wrap.appendChild(item);
+    }
+    return wrap;
+  }
+
+  /**
+   * Build a readout table row with a math label and a value cell that gets
+   * updated on each slider tick. Returns { row, valueEl } so the widget can
+   * hold the value element and call `valueEl.textContent = ...` cheaply
+   * without re-rendering KaTeX on every update.
+   */
+  function readoutRow(mathLabel) {
+    var row = document.createElement("span");
+    row.className = "econ-widget__readout-row";
+
+    var labelEl = document.createElement("span");
+    labelEl.className = "econ-widget__readout-label";
+    labelEl.textContent = "$" + mathLabel + "$";
+    row.appendChild(labelEl);
+
+    var valueEl = document.createElement("span");
+    valueEl.className = "econ-widget__readout-value";
+    valueEl.textContent = "";
+    row.appendChild(valueEl);
+
+    return { row: row, valueEl: valueEl };
+  }
+
+  /**
+   * Build a slider with a math-aware label. Returns { wrap, input }.
+   * `labelMath` is rendered as KaTeX; pass plain strings when no math is
+   * needed (surrounded with no dollar signs). To mix prose + math, embed
+   * $...$ in the label string.
+   */
+  function mathSlider(labelHtml, min, max, step, value, onInput) {
+    var wrap = document.createElement("label");
+    wrap.className = "econ-widget__slider";
+
+    var label = document.createElement("span");
+    label.className = "econ-widget__slider-label";
+    label.innerHTML = labelHtml;  // allows $...$ KaTeX plus plain text
+    wrap.appendChild(label);
+
+    var input = document.createElement("input");
+    input.type = "range";
+    input.min = String(min);
+    input.max = String(max);
+    input.step = String(step);
+    input.value = String(value);
+    input.addEventListener("input", function () {
+      onInput(parseFloat(input.value));
+    });
+    wrap.appendChild(input);
+
+    return { wrap: wrap, input: input };
+  }
+
   window.EconWidgets = {
     register: register,
-    mountAll: mountAll
+    mountAll: mountAll,
+    chrome: {
+      renderMath: renderMath,
+      legend: legend,
+      readoutRow: readoutRow,
+      mathSlider: mathSlider
+    }
   };
 })();

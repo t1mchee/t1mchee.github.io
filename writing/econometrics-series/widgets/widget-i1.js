@@ -2,9 +2,9 @@
  * Widget I1. Foundational projection.
  *
  * Two sliders: plane tilt and y-vector tilt. The residual is always recomputed
- * as the orthogonal projection of y onto the plane, and a readout below shows
- * r · x₁, r · x₂, and ‖r‖. live proof that perpendicularity holds regardless
- * of slider positions. That invariant is the whole point of the widget.
+ * as the orthogonal projection of y onto the plane. A KaTeX-rendered readout
+ * beneath the scene shows r·x1, r·x2, and ‖r‖, giving live proof that the
+ * residual is perpendicular to col(X) regardless of slider positions.
  */
 (function () {
   "use strict";
@@ -15,31 +15,56 @@
   };
 
   var TILT_MIN = 0.02;
-  var TILT_MAX = 1.20;          // ≈ 69°, keeps plane from going edge-on
+  var TILT_MAX = 1.20;
   var Y_ANGLE_MIN = -1.25;
   var Y_ANGLE_MAX = 1.25;
 
   function init(root, Plotly) {
     var M = window.ProjectionMath;
     var S = window.ProjectionScene;
+    var C = window.EconWidgets.chrome;
 
-    var state = {
-      tilt: DEFAULTS.tilt,
-      yAngle: DEFAULTS.yAngle
+    var palette = {
+      y:        S.colors.y,
+      yhat:     S.colors.yhat,
+      residual: S.colors.residual
     };
 
-    var scene = el("div", "econ-widget__scene");
-    var controls = el("div", "econ-widget__controls");
-    var readout = el("div", "econ-widget__readout");
+    var state = { tilt: DEFAULTS.tilt, yAngle: DEFAULTS.yAngle };
 
+    var scene = document.createElement("div");
+    scene.className = "econ-widget__scene";
     root.appendChild(scene);
+
+    // Legend sits between scene and controls
+    var legendEl = C.legend([
+      { color: palette.y,        math: "\\mathbf{y}" },
+      { color: palette.yhat,     math: "\\hat{\\mathbf{y}}" },
+      { color: palette.residual, math: "\\mathbf{r}", dashed: true }
+    ]);
+    root.appendChild(legendEl);
+
+    var controls = document.createElement("div");
+    controls.className = "econ-widget__controls";
     root.appendChild(controls);
+
+    var readout = document.createElement("div");
+    readout.className = "econ-widget__readout";
     root.appendChild(readout);
 
-    var caption = root.getAttribute("data-caption");
-    if (caption) {
-      var cap = el("p", "econ-widget__caption");
-      cap.textContent = caption;
+    // Readout rows (math labels rendered once, value cells updated per tick)
+    var rowDotU = C.readoutRow("\\mathbf{r} \\cdot \\mathbf{x}_1");
+    var rowDotV = C.readoutRow("\\mathbf{r} \\cdot \\mathbf{x}_2");
+    var rowNorm = C.readoutRow("\\|\\mathbf{r}\\|");
+    readout.appendChild(rowDotU.row);
+    readout.appendChild(rowDotV.row);
+    readout.appendChild(rowNorm.row);
+
+    var captionText = root.getAttribute("data-caption");
+    if (captionText) {
+      var cap = document.createElement("p");
+      cap.className = "econ-widget__caption";
+      cap.textContent = captionText;
       root.appendChild(cap);
     }
 
@@ -53,39 +78,33 @@
         y: y,
         yhat: p.yhat,
         residual: p.residual,
-        labels: { y: "y", yhat: "ŷ", residual: "r" }
+        labels: false  // no in-scene labels; legend handles naming
       };
     }
 
     function render() {
       var cfg = buildCfg();
       Plotly.react(scene, S.build(cfg), S.layout(), S.plotConfig());
-      updateReadout(cfg);
-    }
-
-    function updateReadout(cfg) {
       var rDotU = M.dot(cfg.residual, cfg.basisU);
       var rDotV = M.dot(cfg.residual, cfg.basisV);
       var rNorm = M.norm(cfg.residual);
-      readout.innerHTML =
-        row("r · x<sub>1</sub>", fmt(rDotU)) +
-        row("r · x<sub>2</sub>", fmt(rDotV)) +
-        row("‖r‖", fmt(rNorm));
+      rowDotU.valueEl.textContent = fmt(rDotU);
+      rowDotV.valueEl.textContent = fmt(rDotV);
+      rowNorm.valueEl.textContent = fmt(rNorm);
     }
 
-    // Initial plot
+    // Initial Plotly render
     var initialCfg = buildCfg();
     Plotly.newPlot(scene, S.build(initialCfg), S.layout(), S.plotConfig());
-    updateReadout(initialCfg);
 
-    // Controls
-    var tiltSlider = makeSlider("Plane tilt", TILT_MIN, TILT_MAX, 0.005, state.tilt, function (v) {
+    // Sliders. Labels include KaTeX math.
+    var tiltSlider = C.mathSlider("Plane tilt", TILT_MIN, TILT_MAX, 0.005, state.tilt, function (v) {
       state.tilt = v;
       render();
     });
     controls.appendChild(tiltSlider.wrap);
 
-    var yAngleSlider = makeSlider("y direction", Y_ANGLE_MIN, Y_ANGLE_MAX, 0.005, state.yAngle, function (v) {
+    var yAngleSlider = C.mathSlider("$\\mathbf{y}$ direction", Y_ANGLE_MIN, Y_ANGLE_MAX, 0.005, state.yAngle, function (v) {
       state.yAngle = v;
       render();
     });
@@ -103,23 +122,10 @@
       render();
     });
     controls.appendChild(resetBtn);
-  }
 
-  /* ---------- helpers ---------- */
-
-  function el(tag, cls) {
-    var e = document.createElement(tag);
-    if (cls) e.className = cls;
-    return e;
-  }
-
-  function row(label, value) {
-    return (
-      '<span class="econ-widget__readout-row">' +
-        '<span class="econ-widget__readout-label">' + label + '</span>' +
-        '<span class="econ-widget__readout-value">' + value + '</span>' +
-      '</span>'
-    );
+    // Populate initial readout values and render all KaTeX in one pass.
+    render();
+    C.renderMath(root);
   }
 
   function fmt(n) {
@@ -127,29 +133,9 @@
     return n.toFixed(3);
   }
 
-  function makeSlider(labelText, min, max, step, value, onInput) {
-    var wrap = el("label", "econ-widget__slider");
-    var label = el("span", "econ-widget__slider-label");
-    label.textContent = labelText;
-    var input = document.createElement("input");
-    input.type = "range";
-    input.min = String(min);
-    input.max = String(max);
-    input.step = String(step);
-    input.value = String(value);
-    input.addEventListener("input", function () {
-      onInput(parseFloat(input.value));
-    });
-    wrap.appendChild(label);
-    wrap.appendChild(input);
-    return { wrap: wrap, input: input };
-  }
-
-  // Register with the loader once the scripts have all been defined.
   if (window.EconWidgets && typeof window.EconWidgets.register === "function") {
     window.EconWidgets.register("projection-i1", init);
   } else {
-    // Defer registration until the loader is ready.
     document.addEventListener("DOMContentLoaded", function () {
       if (window.EconWidgets) window.EconWidgets.register("projection-i1", init);
     });

@@ -47,15 +47,33 @@
       residual: "rgba(139, 126, 116, 0.7)"  // residual: subdued warm grey
     };
 
+    var C = window.EconWidgets.chrome;
+
     var state = { theta: DEFAULTS.theta, phi: DEFAULTS.phi };
 
     var scene = el("div", "econ-widget__scene");
+    root.appendChild(scene);
+
+    var legendEl = C.legend([
+      { color: palette.Xbeta,    math: "\\mathbf{X}\\beta" },
+      { color: palette.epsilon,  math: "\\boldsymbol{\\varepsilon}" },
+      { color: palette.y,        math: "\\mathbf{y}" },
+      { color: palette.yhat,     math: "\\hat{\\mathbf{y}}", dashed: true },
+      { color: palette.bias,     math: "\\text{bias}" }
+    ]);
+    root.appendChild(legendEl);
+
     var controls = el("div", "econ-widget__controls");
     var readout = el("div", "econ-widget__readout");
-
-    root.appendChild(scene);
     root.appendChild(controls);
     root.appendChild(readout);
+
+    var rowDotU = C.readoutRow("\\boldsymbol{\\varepsilon} \\cdot \\mathbf{x}_1");
+    var rowDotV = C.readoutRow("\\boldsymbol{\\varepsilon} \\cdot \\mathbf{x}_2");
+    var rowBias = C.readoutRow("\\|\\text{bias}\\|");
+    readout.appendChild(rowDotU.row);
+    readout.appendChild(rowDotV.row);
+    readout.appendChild(rowBias.row);
 
     var captionText = root.getAttribute("data-caption");
     if (captionText) {
@@ -140,26 +158,14 @@
         data = data.concat(P.dot(s.yhat, palette.yhat, 4.5));
       }
 
-      // 9. Labels
-      var labels = [
-        { pos: labelPos(s.Xbeta, 0.20, s.u, 1),   text: "Xβ",  color: palette.Xbeta },
-        { pos: S.scaleVec(s.y, 1.10),             text: "y",   color: palette.y },
-        { pos: midpoint(s.Xbeta, s.y, 0.16, s.v), text: "ε",   color: palette.epsilon }
-      ];
-      if (s.biasNorm > 0.08) {
-        labels.push({ pos: S.scaleVec(s.yhat, 1.22), text: "ŷ", color: palette.yhat });
-        labels.push({ pos: midpoint(s.Xbeta, s.yhat, 0.18, s.v), text: "bias", color: palette.bias });
-      }
-      data = data.concat(P.labels(labels));
-
+      // Labels handled by the KaTeX legend below the scene; none in 3D.
       return data;
     }
 
     function updateReadout(s) {
-      readout.innerHTML =
-        row("ε · x<sub>1</sub>", fmt(s.epsDotU)) +
-        row("ε · x<sub>2</sub>", fmt(s.epsDotV)) +
-        row("‖bias‖",            fmt(s.biasNorm));
+      rowDotU.valueEl.textContent = fmt(s.epsDotU);
+      rowDotV.valueEl.textContent = fmt(s.epsDotV);
+      rowBias.valueEl.textContent = fmt(s.biasNorm);
     }
 
     function render() {
@@ -168,19 +174,17 @@
       updateReadout(s);
     }
 
-    // Initial render
     var initialState = compute();
     Plotly.newPlot(scene, buildData(initialState), S.layout(), S.plotConfig());
     updateReadout(initialState);
 
-    // Sliders
-    var thetaSlider = makeSlider("Tilt (ZCM → endogeneity)", THETA_MIN, THETA_MAX, 0.005, state.theta, function (v) {
+    var thetaSlider = C.mathSlider("Error tilt $\\theta$ (ZCM to endogeneity)", THETA_MIN, THETA_MAX, 0.005, state.theta, function (v) {
       state.theta = v;
       render();
     });
     controls.appendChild(thetaSlider.wrap);
 
-    var phiSlider = makeSlider("Tilt direction", PHI_MIN, PHI_MAX, 0.01, state.phi, function (v) {
+    var phiSlider = C.mathSlider("Tilt direction $\\phi$", PHI_MIN, PHI_MAX, 0.01, state.phi, function (v) {
       state.phi = v;
       render();
     });
@@ -198,6 +202,9 @@
       render();
     });
     controls.appendChild(resetBtn);
+
+    // Render all KaTeX in the widget subtree.
+    C.renderMath(root);
   }
 
   /* ---------- helpers ---------- */
@@ -208,57 +215,9 @@
     return e;
   }
 
-  function row(label, value) {
-    return (
-      '<span class="econ-widget__readout-row">' +
-        '<span class="econ-widget__readout-label">' + label + '</span>' +
-        '<span class="econ-widget__readout-value">' + value + '</span>' +
-      '</span>'
-    );
-  }
-
   function fmt(n) {
     if (Math.abs(n) < 5e-4) return "0.000";
     return n.toFixed(3);
-  }
-
-  /**
-   * Place a label beside the TIP of a vector, offset perpendicular to the
-   * vector within an auxiliary direction (usually the plane's "other" basis
-   * vector) so it doesn't overlap the arrow.
-   */
-  function labelPos(tip, offsetAmount, aux, sign) {
-    var o = [aux[0] * offsetAmount * sign, aux[1] * offsetAmount * sign, aux[2] * offsetAmount * sign];
-    return [tip[0] + o[0], tip[1] + o[1], tip[2] + o[2] + 0.07];
-  }
-
-  function midpoint(a, b, offset, aux) {
-    var mx = (a[0] + b[0]) / 2;
-    var my = (a[1] + b[1]) / 2;
-    var mz = (a[2] + b[2]) / 2;
-    return [
-      mx + aux[0] * offset,
-      my + aux[1] * offset,
-      mz + aux[2] * offset + 0.05
-    ];
-  }
-
-  function makeSlider(labelText, min, max, step, value, onInput) {
-    var wrap = el("label", "econ-widget__slider");
-    var label = el("span", "econ-widget__slider-label");
-    label.textContent = labelText;
-    var input = document.createElement("input");
-    input.type = "range";
-    input.min = String(min);
-    input.max = String(max);
-    input.step = String(step);
-    input.value = String(value);
-    input.addEventListener("input", function () {
-      onInput(parseFloat(input.value));
-    });
-    wrap.appendChild(label);
-    wrap.appendChild(input);
-    return { wrap: wrap, input: input };
   }
 
   if (window.EconWidgets && typeof window.EconWidgets.register === "function") {

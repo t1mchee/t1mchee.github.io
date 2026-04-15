@@ -404,6 +404,60 @@
   font-size: 0.8em;
 }
 
+.econ-widget__readout-row .katex {
+  font-size: 0.95em;
+}
+
+/* Legend: small coloured swatches + KaTeX math labels, sitting under scene */
+.econ-widget__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.1rem 1.4rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.55rem 0 0.35rem;
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.econ-widget__legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  line-height: 1;
+}
+
+.econ-widget__legend-swatch {
+  display: inline-block;
+  width: 1.6rem;
+  height: 2px;
+  background: var(--swatch-color, currentColor);
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.econ-widget__legend-item--dashed .econ-widget__legend-swatch {
+  background: none;
+  border-top: 2px dashed var(--swatch-color, currentColor);
+  height: 0;
+}
+
+.econ-widget__legend-item--dotted .econ-widget__legend-swatch {
+  background: none;
+  border-top: 2px dotted var(--swatch-color, currentColor);
+  height: 0;
+}
+
+.econ-widget__legend-label {
+  color: var(--text);
+  line-height: 1;
+}
+
+.econ-widget__legend-label .katex {
+  font-size: 1em;
+}
+
 .econ-widget__caption {
   font-size: 0.85rem;
   color: var(--text-secondary);
