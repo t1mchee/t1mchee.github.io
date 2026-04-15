@@ -144,6 +144,10 @@ li > ul, li > ol {
   margin-bottom: 0.35rem;
 }
 
+.coursework-list .course-detail {
+  display: block;
+}
+
 /* ─── Horizontal Rule ─── */
 hr {
   border: none;
