@@ -63,7 +63,7 @@
 
     <p>It comes down to the fact that Ridge's penalty is isotropic.</p>
     <ul>
-      <li>It penalises $\|\beta\|_2^2$, every direction treated the same — but the data aren't.</li>
+      <li>It penalises $\|\beta\|_2^2$, treating every direction the same. The data are not.</li>
       <li>$X$ has directions where it varies a lot and directions where it's nearly constant.</li>
       <li>An isotropic penalty applied to anisotropic data produces anisotropic shrinkage, and the axes of that anisotropy are the principal components.</li>
       <li>$X^\top X$ appears in both the Ridge normal equations and the PCA eigendecomposition.</li>
@@ -72,7 +72,7 @@
     <p>The labels $y$ still matter:</p>
     <ul>
       <li>They determine the <em>size</em> of each component's coefficient.</li>
-      <li>But the <em>pattern</em> of shrinkage — which components get crushed and which survive — is entirely determined by the unsupervised structure of $X$.</li>
+      <li>But the <em>pattern</em> of shrinkage is entirely determined by the unsupervised structure of $X$: which components get crushed and which survive.</li>
       <li>PCA is baked into the problem.</li>
     </ul>
 
