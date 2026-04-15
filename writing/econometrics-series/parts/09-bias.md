@@ -81,7 +81,7 @@ Geometrically, the failure is a tilt. Under ZCM, the error vector $\boldsymbol{\
 <div class="econ-widget"
      data-widget="projection-i3"
      data-fallback="econometrics-series/img/Pasted image 20260215162859.png"
-     data-caption="Start with ε perpendicular to col(X). ZCM holds and ŷ lands exactly at Xβ, no bias. Tilt ε and watch the bias shadow appear between Xβ and ŷ. The residual (dotted) always stays perpendicular to the plane; what changes is how much of ε slides into the plane and gets mistaken for Xβ."></div>
+     data-caption="Start with $\boldsymbol{\varepsilon}$ perpendicular to $\mathrm{col}(\mathbf{X})$. ZCM holds and $\hat{\mathbf{y}}$ lands exactly at $\mathbf{X}\beta$, no bias. Tilt $\boldsymbol{\varepsilon}$ and watch the bias shadow appear between $\mathbf{X}\beta$ and $\hat{\mathbf{y}}$. The residual (dotted) always stays perpendicular to the plane; what changes is how much of $\boldsymbol{\varepsilon}$ slides into the plane and gets mistaken for $\mathbf{X}\beta$."></div>
 
 OLS projects $\mathbf{y}$ onto $\text{col}(\mathbf{X})$ and catches the shadow of the tilt. The projection lands past the true $\mathbf{X}\beta$ by exactly the amount the shadow contributes. "Ability biases the education coefficient" and "$\boldsymbol{\varepsilon}$ casts a non-zero shadow on $\text{col}(\mathbf{X})$" are the same sentence in different vocabulary.
 
@@ -121,7 +121,7 @@ The experience-tenure example in $\mathbb{R}^n$: two nearly-parallel vectors. Th
 
 <div class="econ-widget"
      data-widget="projection-i4"
-     data-caption="Drag the angle between the two regressors. The blue and plum arrows show how ŷ is built as β̂₁·x₁ + β̂₂·x₂ (drawn tip-to-tail). As the angle shrinks toward zero the two arrows shoot off in opposite directions with huge magnitudes, yet they always close back on the same modest ŷ. VIF in the readout quantifies how fast standard errors are exploding."></div>
+     data-caption="Drag the angle between the two regressors. The blue and plum arrows show how $\hat{\mathbf{y}}$ is built as $\hat\beta_1\mathbf{x}_1 + \hat\beta_2\mathbf{x}_2$ (drawn tip-to-tail). As the angle shrinks toward zero the two arrows shoot off in opposite directions with huge magnitudes, yet they always close back on the same modest $\hat{\mathbf{y}}$. $\mathrm{VIF}$ in the readout quantifies how fast standard errors are exploding."></div>
 
 Near-multicollinearity has a practical signature beyond the interpretation problem. When the subspace is thin, the projection of $\mathbf{y}$ onto it is extremely sensitive to $\mathbf{y}$. Tiny perturbations cause the projection to slide dramatically along the direction where the subspace is nearly flat. Standard errors explode because the estimator is hypersensitive to noise along the collinear direction.
 
