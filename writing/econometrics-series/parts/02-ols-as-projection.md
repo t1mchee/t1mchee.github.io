@@ -20,6 +20,11 @@ The set of all possible fitted values $\{\mathbf{X}\beta : \beta \in \mathbb{R}^
 
 > **Intuition**: Imagine $\mathbf{y}$ as a point floating above the plane $\text{col}(\mathbf{X})$. The closest point on the plane to $\mathbf{y}$ is the foot of the perpendicular dropped from $\mathbf{y}$. Everything that follows is a variation on this drawing.
 
+<div class="econ-widget"
+     data-widget="projection-i1"
+     data-fallback="econometrics-series/img/Pasted image 20260215151424.png"
+     data-caption="Drag the plane tilt or the direction of y. The residual r always lands perpendicular to the plane — the readout shows r · x₁ and r · x₂ pinned at zero no matter where you move."></div>
+
 The foot of the perpendicular is the **orthogonal projection** of $\mathbf{y}$ onto $\text{col}(\mathbf{X})$:
 
 $$\hat{\mathbf{y}} = \mathbf{P_X} \mathbf{y}, \qquad \mathbf{P_X} = \mathbf{X}(\mathbf{X}'\mathbf{X})^{-1}\mathbf{X}'$$

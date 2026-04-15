@@ -218,6 +218,9 @@
       const { text: mdSafe, store } = protectMathDelimiters(md);
       article.innerHTML = restoreMathDelimiters(marked.parse(mdSafe), store);
       decorateSeriesArticle(article);
+      if (window.EconWidgets && typeof window.EconWidgets.mountAll === "function") {
+        window.EconWidgets.mountAll(article);
+      }
       setActive(i);
       renderMath();
       article.scrollTop = 0;
