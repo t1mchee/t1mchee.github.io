@@ -449,6 +449,95 @@ ${renderedHtml}
     };
   }
 
+  function nodeToMarkdown(node) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      return node.textContent || "";
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) {
+      return "";
+    }
+
+    const tag = node.tagName.toLowerCase();
+    const children = Array.from(node.childNodes).map((child) => nodeToMarkdown(child)).join("");
+
+    if (tag === "strong" || tag === "b") {
+      return `**${children.trim()}**`;
+    }
+    if (tag === "em" || tag === "i") {
+      return `*${children.trim()}*`;
+    }
+    if (tag === "code") {
+      return `\`${children.trim()}\``;
+    }
+    if (tag === "a") {
+      const href = node.getAttribute("href") || "";
+      return href ? `[${children.trim()}](${href})` : children;
+    }
+    if (tag === "br") {
+      return "\n";
+    }
+    if (tag === "hr") {
+      return "\n---\n";
+    }
+    if (tag === "h1") {
+      return `\n# ${children.trim()}\n`;
+    }
+    if (tag === "h2") {
+      return `\n## ${children.trim()}\n`;
+    }
+    if (tag === "h3") {
+      return `\n### ${children.trim()}\n`;
+    }
+    if (tag === "h4") {
+      return `\n#### ${children.trim()}\n`;
+    }
+    if (tag === "h5") {
+      return `\n##### ${children.trim()}\n`;
+    }
+    if (tag === "h6") {
+      return `\n###### ${children.trim()}\n`;
+    }
+    if (tag === "p") {
+      return `\n${children.trim()}\n`;
+    }
+    if (tag === "li") {
+      return children.trim();
+    }
+    if (tag === "ul") {
+      const items = Array.from(node.children)
+        .filter((child) => child.tagName && child.tagName.toLowerCase() === "li")
+        .map((li) => `- ${nodeToMarkdown(li).trim()}`)
+        .join("\n");
+      return `\n${items}\n`;
+    }
+    if (tag === "ol") {
+      const items = Array.from(node.children)
+        .filter((child) => child.tagName && child.tagName.toLowerCase() === "li")
+        .map((li, index) => `${index + 1}. ${nodeToMarkdown(li).trim()}`)
+        .join("\n");
+      return `\n${items}\n`;
+    }
+
+    return children;
+  }
+
+  function htmlToMarkdown(html) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(`<div>${html}</div>`, "text/html");
+    const root = doc.body.firstElementChild;
+    if (!root) {
+      return "";
+    }
+
+    const parts = Array.from(root.childNodes).map((child) => nodeToMarkdown(child));
+    let markdown = parts.join("");
+    markdown = markdown
+      .replace(/\n{3,}/g, "\n\n")
+      .replace(/[ \t]+\n/g, "\n")
+      .trim();
+    return markdown;
+  }
+
   function collectNewPostForm() {
     const slug = sanitizeSlug(el.postSlug.value);
     const title = el.postTitle.value.trim();
@@ -527,17 +616,18 @@ ${renderedHtml}
       if (!bodyMatch) {
         throw new Error("Could not parse post body. This post may use a custom structure.");
       }
-      el.editPostMarkdown.value = bodyMatch[1].trim();
-      setStatus(el.editPostStatus, `Loaded ${slug} (HTML body mode).`, "success");
+      el.editPostMarkdown.value = htmlToMarkdown(bodyMatch[1]);
+      setStatus(el.editPostStatus, `Loaded ${slug} (converted from HTML).`, "success");
     }
   }
 
   function updateNonEditorPostHtml(originalHtml, meta, bodyHtml) {
     let updated = originalHtml;
+    const renderedBody = marked.parse(bodyHtml);
     updated = updated.replace(/<title>[\s\S]*?<\/title>/, `<title>${escapeHtml(meta.title)} - Tim Chee</title>`);
     updated = updated.replace(/<h1>[\s\S]*?<\/h1>/, `<h1>${escapeHtml(meta.title)}</h1>`);
     updated = updated.replace(/<p class="post-meta">[\s\S]*?<\/p>/, `<p class="post-meta">${escapeHtml(meta.dateDisplay)}</p>`);
-    updated = updated.replace(/(<div class="post-header">[\s\S]*?<\/div>)([\s\S]*?)(\s*<\/div>\s*<script src="\.\.\/dot-grid\.js"><\/script>)/, `$1\n\n${bodyHtml}\n$3`);
+    updated = updated.replace(/(<div class="post-header">[\s\S]*?<\/div>)([\s\S]*?)(\s*<\/div>\s*<script src="\.\.\/dot-grid\.js"><\/script>)/, `$1\n\n${renderedBody}\n$3`);
     return updated;
   }
 
@@ -760,6 +850,16 @@ ${renderedHtml}
     });
 
     el.loadPostBtn.addEventListener("click", async () => {
+      try {
+        await loadPostForEdit();
+      } catch (error) {
+        setStatus(el.editPostStatus, error.message, "error");
+      }
+    });
+    el.editPostSelect.addEventListener("change", async () => {
+      if (!el.editPostSelect.value) {
+        return;
+      }
       try {
         await loadPostForEdit();
       } catch (error) {
