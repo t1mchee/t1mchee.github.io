@@ -250,10 +250,83 @@
     };
   }
 
+  /**
+   * Compose a Plotly data array from a list of primitive descriptors.
+   *   primitives.plane(u, v, extent?)
+   *   primitives.planeBorder(u, v, extent?)
+   *   primitives.arrow(from, to, color, { width?, dash?, head? })
+   *   primitives.segment(from, to, color, { width?, dash? })
+   *   primitives.rightAngle(yhat, residual, planeU, size?)
+   *   primitives.dot(at, color, size?)
+   *   primitives.labels([{ pos, text, color }])
+   *
+   * Widgets call these directly and assemble their own data arrays, so the
+   * `build()` function above is one valid composition among many.
+   */
+  /**
+   * Primitive descriptors, each returning an ARRAY of Plotly traces so
+   * callers can concat freely without null/array gymnastics.
+   */
+  var primitives = {
+    plane: function (u, v, extent) {
+      return [ planeFill(u, v, extent), planeBorder(u, v, extent) ];
+    },
+    arrow: function (from, to, color, opts) {
+      opts = opts || {};
+      var traces = [ lineTrace(from, to, color, opts.width || 5, opts.dash || "solid") ];
+      if (opts.head !== false) {
+        var dir = [to[0] - from[0], to[1] - from[1], to[2] - from[2]];
+        var len = Math.sqrt(dir[0] * dir[0] + dir[1] * dir[1] + dir[2] * dir[2]);
+        if (len > 1e-6) {
+          traces.push(coneHead(to, dir, color));
+        }
+      }
+      return traces;
+    },
+    segment: function (from, to, color, opts) {
+      opts = opts || {};
+      return [ lineTrace(from, to, color, opts.width || 4, opts.dash || "solid") ];
+    },
+    rightAngle: function (yhat, residual, planeU, size) {
+      var t = rightAngleMarker(yhat, residual, planeU, size);
+      return t ? [t] : [];
+    },
+    dot: function (at, color, size) {
+      return [{
+        type: "scatter3d",
+        mode: "markers",
+        x: [at[0]], y: [at[1]], z: [at[2]],
+        marker: { size: size || 4.5, color: color },
+        hoverinfo: "skip",
+        showlegend: false
+      }];
+    },
+    labels: function (entries) {
+      if (!entries.length) return [];
+      return [{
+        type: "scatter3d",
+        mode: "text",
+        x: entries.map(function (e) { return e.pos[0]; }),
+        y: entries.map(function (e) { return e.pos[1]; }),
+        z: entries.map(function (e) { return e.pos[2]; }),
+        text: entries.map(function (e) { return e.text; }),
+        textfont: {
+          family: LABEL_FONT.family,
+          size: LABEL_FONT.size,
+          color: entries.map(function (e) { return e.color; })
+        },
+        hoverinfo: "skip",
+        showlegend: false
+      }];
+    }
+  };
+
   window.ProjectionScene = {
     build: build,
     layout: layout,
     plotConfig: plotConfig,
-    colors: COLORS
+    colors: COLORS,
+    primitives: primitives,
+    scaleVec: scaleVec
   };
 })();

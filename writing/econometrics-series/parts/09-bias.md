@@ -78,11 +78,12 @@ Angrist and Pischke's college premium is the canonical case. People who attend c
 
 Geometrically, the failure is a tilt. Under ZCM, the error vector $\boldsymbol{\varepsilon}$ is perpendicular to $\text{col}(\mathbf{X})$: it rises straight out of the regressor plane. Under endogeneity, it leans toward the plane. Ability tilts $\boldsymbol{\varepsilon}$ along the education direction.
 
-![](econometrics-series/img/Pasted%20image%2020260215162727.png)
+<div class="econ-widget"
+     data-widget="projection-i3"
+     data-fallback="econometrics-series/img/Pasted image 20260215162859.png"
+     data-caption="Start with ε perpendicular to col(X) — ZCM holds and ŷ lands exactly at Xβ, no bias. Tilt ε and watch the bias shadow appear between Xβ and ŷ. The residual (dotted) always stays perpendicular to the plane; what changes is how much of ε slides into the plane and gets mistaken for Xβ."></div>
 
 OLS projects $\mathbf{y}$ onto $\text{col}(\mathbf{X})$ and catches the shadow of the tilt. The projection lands past the true $\mathbf{X}\beta$ by exactly the amount the shadow contributes. "Ability biases the education coefficient" and "$\boldsymbol{\varepsilon}$ casts a non-zero shadow on $\text{col}(\mathbf{X})$" are the same sentence in different vocabulary.
-
-![](econometrics-series/img/Pasted%20image%2020260215162859.png)
 
 ZCM is the stronger of the two orthogonality conditions from the Expectations chapter. It requires $\varepsilon \perp L^2(\sigma(X))$: orthogonality to every measurable function of $X$, not just the linear span. The weaker moment condition $\mathbb{E}[X'\varepsilon] = 0$ only requires perpendicularity to $\text{span}\{1, X_1, \ldots, X_k\}$. For OLS consistency in a linear model, the moment condition suffices. For stronger identification arguments, particularly in time series where $\varepsilon_t$ must be uncorrelated with past and future $X$ as well as contemporaneous $X$, ZCM is required.
 
