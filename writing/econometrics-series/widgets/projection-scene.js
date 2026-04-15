@@ -4,7 +4,7 @@
  *
  * Aesthetic: warm-cream site palette, transparent background so the page's
  * dot-grid shows through. The residual wears the orange accent because it
- * is the protagonist — the invariant of the picture is its perpendicularity.
+ * is the protagonist. the invariant of the picture is its perpendicularity.
  *
  * Exposed as window.ProjectionScene.
  */

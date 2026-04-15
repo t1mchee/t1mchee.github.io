@@ -23,7 +23,7 @@ The set of all possible fitted values $\{\mathbf{X}\beta : \beta \in \mathbb{R}^
 <div class="econ-widget"
      data-widget="projection-i1"
      data-fallback="econometrics-series/img/Pasted image 20260215151424.png"
-     data-caption="Drag the plane tilt or the direction of y. The residual r always lands perpendicular to the plane — the readout shows r · x₁ and r · x₂ pinned at zero no matter where you move."></div>
+     data-caption="Drag the plane tilt or the direction of y. The residual r always lands perpendicular to the plane. The readout shows r · x₁ and r · x₂ pinned at zero no matter where you move."></div>
 
 The foot of the perpendicular is the **orthogonal projection** of $\mathbf{y}$ onto $\text{col}(\mathbf{X})$:
 

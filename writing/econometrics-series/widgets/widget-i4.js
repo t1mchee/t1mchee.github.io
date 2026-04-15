@@ -1,26 +1,30 @@
 /**
- * Widget I4 — Multicollinearity collapse.
+ * Widget I4. Multicollinearity collapse.
  *
- * Two regressor columns x₁ and x₂ span col(X). A slider controls the angle
- * between them, from orthogonal (π/2) to nearly parallel (≈0.05 rad).
+ * The scene is the decomposition of a fixed fitted-value vector ŷ into
+ * coefficients along two regressors x₁ and x₂:
  *
- * Pedagogical punchline: as x₁ and x₂ become collinear, the fitted values
- * ŷ stay essentially fixed (projection onto their plane is stable), but the
- * decomposition ŷ = β̂₁x₁ + β̂₂x₂ becomes wildly unstable. The readout shows
- * β̂ values exploding and the variance inflation factor (1/sin²α) diverging,
- * while ‖ŷ‖ stays flat. The thin dashed decomposition arrows in the scene
- * visualise the instability — at low angles they shoot off in opposite
- * directions, nearly cancelling to produce the same modest ŷ.
+ *     ŷ = β̂₁·x₁ + β̂₂·x₂
+ *
+ * One slider controls the angle α between x₁ and x₂. The two β̂·x arrows
+ * are drawn tip-to-tail from the origin to ŷ. As α shrinks toward zero
+ * the arrows shoot off in opposite directions along nearly-parallel axes,
+ * yet they always close back on the same modest ŷ. ŷ itself barely moves.
+ *
+ * That is the chapter's punchline made visual: fitted values stable,
+ * decomposition unstable. The readout quantifies this with β̂₁, β̂₂, the
+ * angle in degrees, and the variance inflation factor 1/sin²α.
  */
 (function () {
   "use strict";
 
-  var ALPHA_MIN = 0.05;             // ~3°  — nearly collinear
-  var ALPHA_MAX = Math.PI / 2;      // 90° — orthogonal
-  var ALPHA_DEFAULT = Math.PI / 2;
+  var ALPHA_MIN = 0.05;              // ~3°, nearly collinear
+  var ALPHA_MAX = Math.PI / 2;       // 90°, orthogonal
+  var ALPHA_DEFAULT = 1.15;          // ~66°, enough asymmetry to show at open
 
-  var PLANE_TILT = 0.15;            // mild plane tilt matches other widgets
-  var Y_VEC = [0.70, 0.30, 0.55];   // fixed data vector (above plane)
+  var PLANE_TILT = 0.38;             // matches I1/I3 aesthetic
+  var Y_VEC = [0.90, 0.38, 0.70];    // fixed data vector above plane
+  var SCENE_RANGE = 1.5;             // tighter camera so vectors read large
 
   function init(root, Plotly) {
     var M = window.ProjectionMath;
@@ -28,12 +32,10 @@
     var P = S.primitives;
 
     var palette = {
-      x1:       "#3b5a7a",   // regressor 1: slate
-      x2:       "#7a3b5a",   // regressor 2: muted plum (distinct from x₁)
-      y:        "#1a1a1a",   // data: black to keep visual hierarchy
-      yhat:     "#5a7a3b",   // fitted values: olive
-      decomp1:  "rgba(59, 90, 122, 0.55)",  // dim slate
-      decomp2:  "rgba(122, 59, 90, 0.55)",  // dim plum
+      decomp1:  "#3b5a7a",   // β̂₁·x₁ arrow: slate (regressor 1)
+      decomp2:  "#7a3b5a",   // β̂₂·x₂ arrow: muted plum (regressor 2)
+      y:        "#1a1a1a",   // data: near-black
+      yhat:     "#5a7a3b",   // fitted: olive
       residual: "rgba(139, 126, 116, 0.7)"
     };
 
@@ -55,11 +57,10 @@
     }
 
     function compute() {
-      // Plane basis (orthonormal), slight tilt
       var basis = M.tiltedPlaneBasis(PLANE_TILT);
       var u = basis.u, v = basis.v;
 
-      // x₁ along u, x₂ at angle α from x₁ in the plane
+      // Two regressor directions in the plane
       var x1 = u.slice();
       var x2 = [
         u[0] * Math.cos(state.alpha) + v[0] * Math.sin(state.alpha),
@@ -67,87 +68,95 @@
         u[2] * Math.cos(state.alpha) + v[2] * Math.sin(state.alpha)
       ];
 
+      // y, ŷ (stays essentially fixed as α changes)
       var y = Y_VEC.slice();
-
-      // Projection of y onto the plane using the orthonormal basis
       var proj = M.projectOrthonormal(y, u, v);
-      var yhat = proj.yhat;          // stays stable — independent of α
-      var yhatNorm = M.norm(yhat);
-      var residualNorm = M.norm(proj.residual);
+      var yhat = proj.yhat;
 
-      // Solve ŷ = β̂₁ x₁ + β̂₂ x₂ in the 2D plane coordinates (u, v)
-      // ŷ has coords (proj.alpha, proj.beta) in (u, v).
-      // x₁ has coords (1, 0), x₂ has coords (cos α, sin α).
-      //   β̂₁ + β̂₂ cos α = proj.alpha
-      //   β̂₂ sin α       = proj.beta
+      // Decomposition: solve ŷ in (x₁, x₂) coords.
+      // ŷ has (u,v) coords (proj.alpha, proj.beta); x₁ = (1,0); x₂ = (cos α, sin α).
       var sinA = Math.sin(state.alpha);
       var cosA = Math.cos(state.alpha);
       var beta2 = proj.beta / sinA;
       var beta1 = proj.alpha - beta2 * cosA;
 
-      // Decomposition arrows: β̂₁·x₁ from origin, β̂₂·x₂ from that tip to ŷ
+      // Tip-to-tail: origin -> β̂₁·x₁ -> β̂₁·x₁ + β̂₂·x₂ = ŷ
       var decomp1End = M.scale(x1, beta1);
-      var decomp2End = yhat; // guaranteed by construction
-
-      // VIF for two regressors: 1 / (1 − r²), r = cos α  →  1 / sin²α
-      var vif = 1 / (sinA * sinA);
-
-      // Squared-angle readout in degrees for intuition
-      var angleDeg = state.alpha * 180 / Math.PI;
 
       return {
         u: u, v: v,
         x1: x1, x2: x2,
-        y: y, yhat: yhat,
-        residual: proj.residual,
+        y: y, yhat: yhat, residual: proj.residual,
         beta1: beta1, beta2: beta2,
         decomp1End: decomp1End,
-        vif: vif,
-        angleDeg: angleDeg,
-        yhatNorm: yhatNorm,
-        residualNorm: residualNorm,
-        sinA: sinA
+        vif: 1 / (sinA * sinA),
+        angleDeg: state.alpha * 180 / Math.PI
       };
     }
 
     function buildData(s) {
       var data = [];
 
-      // Plane (kept subtle so the regressor arrows carry the scene)
-      data = data.concat(P.plane(s.u, s.v, 1.7));
+      // Plane, smaller than other widgets so arrows fill the frame
+      data = data.concat(P.plane(s.u, s.v, 1.25));
 
-      // Decomposition arrows — drawn first so solid x arrows sit in front
-      // Only draw if the arrow length is within a reasonable visual extent;
-      // beyond that, let the arrow extend and clip naturally (the blow-up
-      // is the point).
-      data = data.concat(P.segment([0,0,0], s.decomp1End, palette.decomp1, { width: 3, dash: "dash" }));
-      data = data.concat(P.segment(s.decomp1End, s.yhat, palette.decomp2, { width: 3, dash: "dash" }));
-
-      // Regressor arrows — unit length, solid
-      data = data.concat(P.arrow([0,0,0], s.x1, palette.x1, { width: 5 }));
-      data = data.concat(P.arrow([0,0,0], s.x2, palette.x2, { width: 5 }));
-
-      // Fitted values arrow ŷ (in plane, stays stable)
-      data = data.concat(P.arrow([0,0,0], s.yhat, palette.yhat, { width: 5 }));
-
-      // Data vector y
-      data = data.concat(P.arrow([0,0,0], s.y, palette.y, { width: 5 }));
-
-      // Residual — dotted from ŷ to y
-      if (s.residualNorm > 5e-4) {
-        data = data.concat(P.segment(s.yhat, s.y, palette.residual, { width: 3, dash: "dot" }));
+      // β̂₁·x₁ arrow (origin to decomp1End). Solid, saturated.
+      if (Math.abs(s.beta1) > 1e-4) {
+        data = data.concat(P.arrow([0, 0, 0], s.decomp1End, palette.decomp1, { width: 6 }));
       }
 
-      // Dot at ŷ
-      data = data.concat(P.dot(s.yhat, palette.yhat, 4.5));
+      // β̂₂·x₂ arrow (decomp1End to ŷ). Solid, saturated.
+      if (Math.abs(s.beta2) > 1e-4) {
+        data = data.concat(P.arrow(s.decomp1End, s.yhat, palette.decomp2, { width: 6 }));
+      }
 
-      // Labels
-      var labels = [
-        { pos: labelOut(s.x1, 1.18),    text: "x₁",  color: palette.x1 },
-        { pos: labelOut(s.x2, 1.18),    text: "x₂",  color: palette.x2 },
-        { pos: labelOut(s.y,  1.08),    text: "y",   color: palette.y },
-        { pos: labelOut(s.yhat, 1.35, 0.08), text: "ŷ", color: palette.yhat }
-      ];
+      // ŷ as a small marker (not an arrow, to avoid competing with the
+      // decomposition arrows which already terminate there).
+      data = data.concat(P.dot(s.yhat, palette.yhat, 7));
+
+      // y, quieter than the decomposition
+      data = data.concat(P.arrow([0, 0, 0], s.y, palette.y, { width: 4 }));
+
+      // Residual, subtle
+      if (M.norm(s.residual) > 5e-4) {
+        data = data.concat(P.segment(s.yhat, s.y, palette.residual, { width: 2, dash: "dot" }));
+      }
+
+      // Labels. Position each beside its arrow's midpoint, nudged outward.
+      var labels = [];
+
+      // β̂₁·x₁ label at the midpoint of the first decomposition arrow
+      if (Math.abs(s.beta1) > 0.05) {
+        labels.push({
+          pos: labelBeside([0, 0, 0], s.decomp1End, s.v, 0.13, 0.07),
+          text: "β̂₁·x₁",
+          color: palette.decomp1
+        });
+      }
+
+      // β̂₂·x₂ label at the midpoint of the second decomposition arrow
+      if (Math.abs(s.beta2) > 0.05) {
+        labels.push({
+          pos: labelBeside(s.decomp1End, s.yhat, s.v, -0.13, 0.07),
+          text: "β̂₂·x₂",
+          color: palette.decomp2
+        });
+      }
+
+      // ŷ label offset outward and down a little
+      labels.push({
+        pos: [s.yhat[0] + 0.14, s.yhat[1] - 0.05, s.yhat[2] - 0.10],
+        text: "ŷ",
+        color: palette.yhat
+      });
+
+      // y label at tip
+      labels.push({
+        pos: [s.y[0] * 1.08, s.y[1] * 1.08, s.y[2] * 1.08 + 0.05],
+        text: "y",
+        color: palette.y
+      });
+
       data = data.concat(P.labels(labels));
 
       return data;
@@ -161,18 +170,31 @@
         row("VIF",       fmtVIF(s.vif));
     }
 
+    function layoutForI4() {
+      var L = S.layout();
+      // Tighten the axis range so vectors read larger.
+      L.scene.xaxis.range = [-SCENE_RANGE, SCENE_RANGE];
+      L.scene.yaxis.range = [-SCENE_RANGE, SCENE_RANGE];
+      L.scene.zaxis.range = [-SCENE_RANGE, SCENE_RANGE];
+      // Pull the camera in slightly.
+      L.scene.camera = {
+        eye: { x: 1.45, y: 1.15, z: 0.85 },
+        up: { x: 0, y: 0, z: 1 },
+        center: { x: 0, y: 0, z: 0 }
+      };
+      return L;
+    }
+
     function render() {
       var s = compute();
-      Plotly.react(scene, buildData(s), S.layout(), S.plotConfig());
+      Plotly.react(scene, buildData(s), layoutForI4(), S.plotConfig());
       updateReadout(s);
     }
 
     var initial = compute();
-    Plotly.newPlot(scene, buildData(initial), S.layout(), S.plotConfig());
+    Plotly.newPlot(scene, buildData(initial), layoutForI4(), S.plotConfig());
     updateReadout(initial);
 
-    // Slider — use cos(α) space so motion feels linear in "collinearity"?
-    // Stick with α directly; it's the natural quantity the reader sees move.
     var alphaSlider = makeSlider("Angle between x₁ and x₂", ALPHA_MIN, ALPHA_MAX, 0.002, state.alpha, function (v) {
       state.alpha = v;
       render();
@@ -227,8 +249,19 @@
     return d.toFixed(1) + "°";
   }
 
-  function labelOut(tip, scale, zLift) {
-    return [tip[0] * scale, tip[1] * scale, tip[2] * scale + (zLift || 0.05)];
+  /**
+   * Put a label beside the midpoint of a segment from `a` to `b`, offset
+   * perpendicular to the segment within an auxiliary direction `aux`.
+   */
+  function labelBeside(a, b, aux, offset, zLift) {
+    var mx = (a[0] + b[0]) / 2;
+    var my = (a[1] + b[1]) / 2;
+    var mz = (a[2] + b[2]) / 2;
+    return [
+      mx + aux[0] * offset,
+      my + aux[1] * offset,
+      mz + aux[2] * offset + (zLift || 0)
+    ];
   }
 
   function makeSlider(labelText, min, max, step, value, onInput) {

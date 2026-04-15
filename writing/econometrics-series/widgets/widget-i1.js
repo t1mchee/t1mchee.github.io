@@ -1,9 +1,9 @@
 /**
- * Widget I1 — Foundational projection.
+ * Widget I1. Foundational projection.
  *
  * Two sliders: plane tilt and y-vector tilt. The residual is always recomputed
  * as the orthogonal projection of y onto the plane, and a readout below shows
- * r · x₁, r · x₂, and ‖r‖ — live proof that perpendicularity holds regardless
+ * r · x₁, r · x₂, and ‖r‖. live proof that perpendicularity holds regardless
  * of slider positions. That invariant is the whole point of the widget.
  */
 (function () {

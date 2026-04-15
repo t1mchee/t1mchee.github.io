@@ -1,16 +1,16 @@
 /**
- * Widget I3 — ZCM tilt and bias.
+ * Widget I3. ZCM tilt and bias.
  *
  * The full ZCM picture. Plane = col(X). Xβ sits in the plane (the truth). ε
  * is drawn from Xβ's tip and tilts between perpendicular (ZCM holds) and
  * tilted (ZCM fails). y = Xβ + ε. ŷ = orthogonal projection of y onto the
- * plane — which lands exactly at Xβ under ZCM, and drifts past it by the
+ * plane. which lands exactly at Xβ under ZCM, and drifts past it by the
  * shadow of ε when ZCM fails. The orange segment between Xβ and ŷ is that
- * shadow — the bias.
+ * shadow. the bias.
  *
  * Two sliders:
- *   θ — how much ε tilts away from perpendicular (magnitude of ZCM failure)
- *   φ — which regressor direction the tilt points along
+ *   θ. how much ε tilts away from perpendicular (magnitude of ZCM failure)
+ *   φ. which regressor direction the tilt points along
  *
  * Readout: ε·x₁, ε·x₂, ‖bias‖. Under ZCM (θ=0) all three are zero. The user
  * discovers bias by watching these move off zero.
@@ -112,24 +112,24 @@
       // 1. Plane
       data = data.concat(P.plane(s.u, s.v, 1.7));
 
-      // 2. Xβ — solid olive, in plane
+      // 2. Xβ. solid olive, in plane
       data = data.concat(P.arrow([0,0,0], s.Xbeta, palette.Xbeta, { width: 5 }));
 
-      // 3. ŷ — dashed warm brown, in plane (visually distinct from Xβ)
+      // 3. ŷ. dashed warm brown, in plane (visually distinct from Xβ)
       data = data.concat(P.arrow([0,0,0], s.yhat, palette.yhat, { width: 5, dash: "dash" }));
 
-      // 4. Bias segment — orange, in plane, from Xβ tip to ŷ tip
+      // 4. Bias segment. orange, in plane, from Xβ tip to ŷ tip
       if (s.biasNorm > 5e-4) {
         data = data.concat(P.segment(s.Xbeta, s.yhat, palette.bias, { width: 6 }));
       }
 
-      // 5. ε — red arrow from Xβ tip to y tip
+      // 5. ε. red arrow from Xβ tip to y tip
       data = data.concat(P.arrow(s.Xbeta, s.y, palette.epsilon, { width: 5 }));
 
-      // 6. y — slate, origin to y (drawn on top of Xβ for visual clarity)
+      // 6. y. slate, origin to y (drawn on top of Xβ for visual clarity)
       data = data.concat(P.arrow([0,0,0], s.y, palette.y, { width: 5 }));
 
-      // 7. Residual — dotted, from ŷ up to y (always perpendicular to plane)
+      // 7. Residual. dotted, from ŷ up to y (always perpendicular to plane)
       if (M.norm(s.residual) > 5e-4) {
         data = data.concat(P.segment(s.yhat, s.y, palette.residual, { width: 3, dash: "dot" }));
       }
