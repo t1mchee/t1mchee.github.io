@@ -119,6 +119,10 @@ The experience-tenure example in $\mathbb{R}^n$: two nearly-parallel vectors. Th
 
 "We cannot separately identify the effects" (the economist's version) and "the coordinates of the projection in a nearly-degenerate basis are unstable" (the geometer's version) are the same statement. The fitted values are stable; the decomposition into coefficients is not.
 
+<div class="econ-widget"
+     data-widget="projection-i4"
+     data-caption="Drag the angle between x₁ and x₂ from 90° toward 0°. ŷ stays essentially fixed — the plane's orientation barely changes. But β̂₁ and β̂₂ explode with opposite signs, and VIF (the standard-error inflation factor) runs off to infinity. The dashed decomposition arrows show the coefficients shooting out along x₁ and x₂ in opposite directions, nearly cancelling to produce the same modest ŷ."></div>
+
 Near-multicollinearity has a practical signature beyond the interpretation problem. When the subspace is thin, the projection of $\mathbf{y}$ onto it is extremely sensitive to $\mathbf{y}$. Tiny perturbations cause the projection to slide dramatically along the direction where the subspace is nearly flat. Standard errors explode because the estimator is hypersensitive to noise along the collinear direction.
 
 ---
