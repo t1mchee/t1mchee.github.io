@@ -1,6 +1,7 @@
 /**
- * Ceramics: tall scroll stages with sticky viewport; --stage-focus is a plateau curve
- * (fast in, long hold, fast out). Captions track the hold. Disabled when prefers-reduced-motion.
+ * Ceramics: tall scroll stages with sticky viewport; --stage-focus ramps in/out over enough
+ * scroll to read the scale/opacity phase, holds at 1 in the middle, then ramps out. Captions
+ * track the hold. Disabled when prefers-reduced-motion.
  */
 (function () {
   const stages = document.querySelectorAll('.ceramics-stage');
@@ -33,21 +34,24 @@
     return Math.max(0, Math.min(1, (y - topDoc + vh) / span));
   }
 
-  /** Scroll-driven “focus”: quick scale-in, long hold at 1, quick scale-out (not symmetric-linear). */
+  /**
+   * Plateau focus: wide smooth ramps so small→full scale/opacity is visible in scroll space,
+   * then a solid hold, then wide ramp down. (Narrow ramps read as “no phasing”.)
+   */
   function plateauFocus(p) {
     const rise0 = 0;
-    const rise1 = 0.12;
-    const fall0 = 0.88;
+    const rise1 = 0.26;
+    const fall0 = 0.74;
     const fall1 = 1;
     if (p <= rise1) return smoothstep(rise0, rise1, p);
     if (p >= fall0) return 1 - smoothstep(fall0, fall1, p);
     return 1;
   }
 
-  /** Captions follow the plateau: in near end of rise, out near start of fall. */
+  /** Captions: fade through rise, full during most of hold, fade through fall. */
   function captionAlpha(p) {
-    const inA = smoothstep(0.05, 0.17, p);
-    const outA = 1 - smoothstep(0.83, 0.95, p);
+    const inA = smoothstep(0.08, 0.26, p);
+    const outA = 1 - smoothstep(0.74, 0.92, p);
     return Math.max(0, Math.min(1, inA * outA));
   }
 
