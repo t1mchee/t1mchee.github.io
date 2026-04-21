@@ -35,23 +35,23 @@
   }
 
   /**
-   * Plateau focus: wide smooth ramps so small→full scale/opacity is visible in scroll space,
-   * then a solid hold, then wide ramp down. (Narrow ramps read as “no phasing”.)
+   * Plateau focus: visible phase-in, shorter hold at full, longer phase-out (fall uses more
+   * scroll than the flat middle so exit reads gentler).
    */
   function plateauFocus(p) {
     const rise0 = 0;
-    const rise1 = 0.33;
-    const fall0 = 0.67;
+    const rise1 = 0.3;
+    const fall0 = 0.52;
     const fall1 = 1;
     if (p <= rise1) return smoothstep(rise0, rise1, p);
     if (p >= fall0) return 1 - smoothstep(fall0, fall1, p);
     return 1;
   }
 
-  /** Captions: fade through rise, full during most of hold, fade through fall. */
+  /** Captions: match rise; fade out across the longer fall. */
   function captionAlpha(p) {
-    const inA = smoothstep(0.08, 0.32, p);
-    const outA = 1 - smoothstep(0.68, 0.92, p);
+    const inA = smoothstep(0.08, 0.29, p);
+    const outA = 1 - smoothstep(0.5, 0.9, p);
     return Math.max(0, Math.min(1, inA * outA));
   }
 
