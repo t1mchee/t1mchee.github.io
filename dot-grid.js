@@ -11,17 +11,35 @@
   const PUSH_STRENGTH = 30;
   const EASE_BACK = 0.08;
 
-  let width, height, cols, rows, dots;
+  let width;
+  let height;
+  let cols;
+  let rows;
+  let dots;
   let mouse = { x: -9999, y: -9999 };
   let animId;
+  /** Bottom edge of <nav> in viewport px; dots + mouse use coords from this line down */
+  let navBottomPx = 0;
+
+  function updateNavBottom() {
+    const nav = document.querySelector('nav');
+    navBottomPx = nav ? Math.round(nav.getBoundingClientRect().bottom) : 0;
+    document.documentElement.style.setProperty('--dot-grid-top', `${navBottomPx}px`);
+  }
+
+  function peekNavBottom() {
+    const nav = document.querySelector('nav');
+    return nav ? Math.round(nav.getBoundingClientRect().bottom) : 0;
+  }
 
   function init() {
+    updateNavBottom();
     width = window.innerWidth;
-    height = window.innerHeight;
+    height = Math.max(0, window.innerHeight - navBottomPx);
     canvas.width = width * dpr;
     canvas.height = height * dpr;
-    canvas.style.width = width + 'px';
-    canvas.style.height = height + 'px';
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     cols = Math.ceil(width / SPACING) + 1;
@@ -50,7 +68,7 @@
       const dist = Math.sqrt(dx * dx + dy * dy);
 
       if (dist < MOUSE_RADIUS) {
-        const force = (1 - dist / MOUSE_RADIUS);
+        const force = 1 - dist / MOUSE_RADIUS;
         const angle = Math.atan2(dy, dx);
         const push = force * force * PUSH_STRENGTH;
         d.x += (d.homeX - Math.cos(angle) * push - d.x) * 0.2;
@@ -71,7 +89,7 @@
 
   function onMouseMove(e) {
     mouse.x = e.clientX;
-    mouse.y = e.clientY;
+    mouse.y = e.clientY - navBottomPx;
   }
 
   function onMouseLeave() {
@@ -85,13 +103,42 @@
     draw();
   }
 
+  let scrollQueued = false;
+  function onScrollRaf() {
+    if (scrollQueued) return;
+    scrollQueued = true;
+    requestAnimationFrame(() => {
+      scrollQueued = false;
+      const next = peekNavBottom();
+      if (next === navBottomPx) return;
+      cancelAnimationFrame(animId);
+      init();
+      draw();
+    });
+  }
+
+  function restartIfNavMoved() {
+    const next = peekNavBottom();
+    if (next === navBottomPx) return;
+    cancelAnimationFrame(animId);
+    init();
+    draw();
+  }
+
+  const navEl = document.querySelector('nav');
+  if (navEl && typeof ResizeObserver !== 'undefined') {
+    const ro = new ResizeObserver(() => restartIfNavMoved());
+    ro.observe(navEl);
+  }
+
   window.addEventListener('mousemove', onMouseMove);
   document.addEventListener('mouseleave', onMouseLeave);
   window.addEventListener('resize', onResize);
+  window.addEventListener('scroll', onScrollRaf, { passive: true });
 
   window.addEventListener('touchmove', (e) => {
     mouse.x = e.touches[0].clientX;
-    mouse.y = e.touches[0].clientY;
+    mouse.y = e.touches[0].clientY - navBottomPx;
   });
   window.addEventListener('touchend', onMouseLeave);
 

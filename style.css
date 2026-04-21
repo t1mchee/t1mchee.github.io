@@ -14,6 +14,8 @@
   --border: #DDD5C9;
   --code-bg: #EDE7DD;
   --max-width: 660px;
+  /* Set by dot-grid.js to bottom of <nav> in viewport px */
+  --dot-grid-top: 0px;
 }
 
 body {
@@ -29,10 +31,10 @@ body {
 /* ─── Dot Grid Canvas ─── */
 #dot-grid {
   position: fixed;
-  top: 0;
+  top: var(--dot-grid-top);
   left: 0;
   width: 100%;
-  height: 100%;
+  /* height set in dot-grid.js (innerHeight − nav bottom) */
   z-index: 0;
   pointer-events: none;
 }
@@ -52,11 +54,23 @@ nav {
   gap: 1.5rem;
   margin-bottom: 0.75rem;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--border);
   position: sticky;
   top: 0;
   z-index: 2;
   background: var(--bg);
+}
+
+/* Full-bleed rule under nav (nav stays column-width; line spans viewport) */
+nav::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100vw;
+  bottom: 0;
+  height: 1px;
+  background: var(--border);
+  pointer-events: none;
 }
 
 nav .site-name {
