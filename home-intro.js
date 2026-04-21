@@ -137,6 +137,8 @@
     window.removeEventListener('scroll', onScroll, scrollOpts);
     window.removeEventListener('resize', onResize);
 
+    const first = card.getBoundingClientRect();
+
     body.classList.add('home-intro-done');
     card.classList.remove('intro-floating');
     clearCardMotionStyles();
@@ -146,7 +148,37 @@
     below.style.transform = '';
     below.removeAttribute('aria-hidden');
 
-    window.scrollTo(0, 0);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const last = card.getBoundingClientRect();
+        const dx = Math.round(first.left - last.left);
+        const dy = Math.round(first.top - last.top);
+
+        if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+          card.style.transition = 'none';
+          card.style.transform = `translate(${dx}px, ${dy}px)`;
+          void card.offsetWidth;
+          card.style.transition =
+            'transform 0.22s cubic-bezier(0.22, 1, 0.36, 1)';
+          requestAnimationFrame(() => {
+            card.style.transform = 'translate(0, 0)';
+          });
+          const endFlip = () => {
+            card.removeEventListener('transitionend', endFlip);
+            card.style.removeProperty('transition');
+            card.style.removeProperty('transform');
+          };
+          card.addEventListener('transitionend', endFlip, { once: true });
+          setTimeout(endFlip, 400);
+        }
+
+        try {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } catch (_) {
+          window.scrollTo(0, 0);
+        }
+      });
+    });
   }
 
   function tick() {
