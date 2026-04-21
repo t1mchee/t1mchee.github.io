@@ -264,13 +264,13 @@
     <nav>
       <a href="../index.html" class="site-name">Tim Chee</a>
       <a href="../index.html">About</a>
-      <a href="../writing.html" class="active">Writing</a>
+      <a href="../writing.html" class="active">Posts</a>
       <a href="../cv.html">CV</a>
       <a href="../coursework.html">Coursework</a>
       <a href="../ceramics.html">Ceramics</a>
     </nav>
 
-    <a href="../writing.html" class="back-link">Writing</a>
+    <a href="../writing.html" class="back-link">Posts</a>
 
     <div class="post-header">
       <h1>${safeTitle}</h1>
@@ -570,7 +570,7 @@ ${renderedHtml}
     const newWritingIndex = upsertPostInWritingIndex(state.writingIndex, meta);
 
     await putTextFile(postPath, postHtml, `Add post: ${meta.title}`);
-    await putTextFile("writing.html", newWritingIndex, `Update writing index: ${meta.title}`);
+    await putTextFile("writing.html", newWritingIndex, `Update posts index: ${meta.title}`);
 
     state.writingIndex = newWritingIndex;
     state.posts = parsePostsFromWritingIndex(state.writingIndex);
@@ -656,7 +656,7 @@ ${renderedHtml}
     const updatedWritingIndex = upsertPostInWritingIndex(state.writingIndex, meta);
 
     await putTextFile(`writing/${meta.slug}.html`, newPostHtml, `Edit post: ${meta.title}`);
-    await putTextFile("writing.html", updatedWritingIndex, `Update writing index: ${meta.title}`);
+    await putTextFile("writing.html", updatedWritingIndex, `Update posts index: ${meta.title}`);
 
     state.writingIndex = updatedWritingIndex;
     state.posts = parsePostsFromWritingIndex(state.writingIndex);

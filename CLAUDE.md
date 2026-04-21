@@ -6,7 +6,7 @@ Tim Chee's personal website. Plain static HTML/CSS served by GitHub Pages — no
 
 ```
 ├── index.html              # Homepage (About page)
-├── writing.html            # Writing index — lists all posts
+├── writing.html            # Posts index — lists all posts
 ├── cv.html                 # Embeds TC_CV_310326.pdf in an iframe
 ├── coursework.html         # Relevant coursework list
 ├── ceramics.html           # Ceramics photo gallery
@@ -34,7 +34,7 @@ Every page is hand-written HTML. They all share:
 - `dot-grid.js` for the interactive background (`<canvas id="dot-grid">` + `<script src="dot-grid.js">`)
 - `favicon.js` / `favicon.svg` for the animated favicon
 - GoatCounter analytics script before `</body>`
-- A consistent `<nav>` with links to: About, Writing, CV, Coursework, Ceramics
+- A consistent `<nav>` with links to: About, Posts, CV, Coursework, Ceramics
 
 Pages in `writing/` use `../` relative paths for shared assets (e.g. `../style.css`, `../dot-grid.js`).
 
@@ -47,7 +47,7 @@ Math rendering uses KaTeX (loaded via CDN in posts that need it). Mermaid diagra
 3. Write content between the post-header and closing `</div>`
 4. Uncomment KaTeX or Mermaid `<script>` tags if needed
 5. For images, create `writing/my-post/` and reference as `<img src="my-post/image.png">`
-6. Add an entry to `writing.html` (newest first):
+6. Add an entry to `writing.html` — the posts index (newest first):
    ```html
    <li>
      <a href="writing/my-post.html" class="post-title">Title</a>
