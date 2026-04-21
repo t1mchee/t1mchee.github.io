@@ -1,6 +1,6 @@
 /**
- * About page: centered name card on load; scroll drives move into layout + body reveal.
- * Skipped when prefers-reduced-motion: reduce.
+ * About page: no in-flow name card at first — card only exists fixed, fades in,
+ * then scroll eases it into its slot (document slot + spacer drive scroll height).
  */
 (function () {
   const body = document.body;
@@ -17,10 +17,11 @@
   }
 
   const card = document.getElementById('profile-card');
+  const slot = document.getElementById('home-card-slot');
   const spacer = document.getElementById('home-intro-spacer');
   const nav = document.querySelector('nav');
 
-  if (!card || !spacer || !below) {
+  if (!card || !slot || !spacer || !below) {
     body.classList.add('home-intro-done');
     below?.removeAttribute('aria-hidden');
     return;
@@ -32,43 +33,63 @@
     return nav ? Math.round(nav.getBoundingClientRect().bottom) : 0;
   }
 
-  function easeOutCubic(t) {
-    const u = 1 - t;
-    return 1 - u * u * u;
+  function smoothstep(edge0, edge1, x) {
+    const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
+    return t * t * (3 - 2 * t);
+  }
+
+  function easeInOutCubic(t) {
+    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
   }
 
   function scrollRangePx() {
     const slab = window.innerHeight - navBottom();
-    return Math.max(320, Math.min(720, Math.round(slab * 0.55)));
+    return Math.max(340, Math.min(760, Math.round(slab * 0.58)));
   }
 
   function maxScrollY() {
     return Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
   }
 
-  /** Resting slot in document coordinates */
+  /** Resting slot (top-left of name card column) in document coordinates */
   let endDoc = { top: 0, left: 0, width: 0, height: 0 };
   let range = 500;
 
   function measure() {
-    card.classList.remove('intro-floating');
-    card.style.left = '';
-    card.style.top = '';
-    card.style.width = '';
+    card.style.cssText = '';
     spacer.style.minHeight = '0';
+    slot.style.minHeight = '0';
+    void slot.offsetHeight;
+
+    card.classList.add('intro-floating');
+    card.style.position = 'fixed';
+    card.style.left = '-9999px';
+    card.style.top = '0';
+    card.style.margin = '0';
+    card.style.zIndex = '3';
+    card.style.boxSizing = 'border-box';
+    const cw = Math.min(window.innerWidth - 48, 660);
+    card.style.width = `${cw}px`;
+    card.style.maxWidth = '100%';
     void card.offsetHeight;
 
-    const r = card.getBoundingClientRect();
+    const cr = card.getBoundingClientRect();
+    const h = Math.max(120, Math.ceil(cr.height));
+    const w = Math.max(280, Math.ceil(cr.width));
+
+    slot.style.minHeight = `${h}px`;
+    void slot.offsetHeight;
+
+    const sr = slot.getBoundingClientRect();
     const sy = window.scrollY;
     const sx = window.scrollX;
     endDoc = {
-      top: r.top + sy,
-      left: r.left + sx,
-      width: r.width,
-      height: r.height,
+      top: sr.top + sy,
+      left: sr.left + sx,
+      width: w,
+      height: h,
     };
     range = scrollRangePx();
-    /* Must leave enough document height that scrollY can reach ~range; otherwise p never hits 1 and the card stays fixed. */
     spacer.style.minHeight = `${Math.ceil(range + window.innerHeight + 48)}px`;
     void spacer.offsetHeight;
   }
@@ -76,8 +97,8 @@
   function startCenter() {
     const y0 = navBottom();
     const avail = window.innerHeight - y0;
-    let startY = y0 + avail * 0.4 - endDoc.height / 2;
-    const minY = y0 + 6;
+    let startY = y0 + avail * 0.38 - endDoc.height / 2;
+    const minY = y0 + 8;
     if (startY < minY) startY = minY;
     const startX = (window.innerWidth - endDoc.width) / 2;
     return { startX, startY };
@@ -85,6 +106,20 @@
 
   let finalized = false;
   let raf = 0;
+
+  function clearCardMotionStyles() {
+    card.style.removeProperty('left');
+    card.style.removeProperty('top');
+    card.style.removeProperty('width');
+    card.style.removeProperty('max-width');
+    card.style.removeProperty('opacity');
+    card.style.removeProperty('transform');
+    card.style.removeProperty('filter');
+    card.style.removeProperty('position');
+    card.style.removeProperty('margin');
+    card.style.removeProperty('z-index');
+    card.style.removeProperty('box-sizing');
+  }
 
   function finalize() {
     if (finalized) return;
@@ -94,10 +129,9 @@
 
     body.classList.add('home-intro-done');
     card.classList.remove('intro-floating');
-    card.style.left = '';
-    card.style.top = '';
-    card.style.width = '';
+    clearCardMotionStyles();
     spacer.style.minHeight = '0';
+    slot.style.minHeight = '0';
     below.style.opacity = '';
     below.style.transform = '';
     below.removeAttribute('aria-hidden');
@@ -113,26 +147,32 @@
       finalize();
       return;
     }
-    /* Map progress to what the page can actually scroll (may be < range). */
     const denom = Math.max(80, Math.min(range, maxScroll));
     const p = Math.min(1, Math.max(0, sy / denom));
-    const ux = easeOutCubic(p);
+
+    /* Fade / sharpen first, then glide (staged for a softer entrance). */
+    const pVis = smoothstep(0, 0.2, p);
+    const pPos = easeInOutCubic(Math.min(1, Math.max(0, (p - 0.06) / 0.94)));
 
     const { startX, startY } = startCenter();
     const endLeft = endDoc.left - window.scrollX;
     const endTop = endDoc.top - sy;
 
-    const x = startX + (endLeft - startX) * ux;
-    const y = startY + (endTop - startY) * ux;
+    const x = startX + (endLeft - startX) * pPos;
+    const y = startY + (endTop - startY) * pPos;
 
-    const w = Math.max(280, Math.round(endDoc.width));
     card.style.left = `${Math.round(x)}px`;
     card.style.top = `${Math.round(y)}px`;
-    card.style.width = `${w}px`;
+    card.style.width = `${Math.round(endDoc.width)}px`;
 
-    const reveal = Math.max(0, Math.min(1, (p - 0.22) / 0.78));
-    below.style.opacity = String(reveal);
-    below.style.transform = `translateY(${12 * (1 - reveal)}px)`;
+    const blurPx = 5 * (1 - pVis);
+    card.style.opacity = String(pVis * pVis);
+    card.style.filter = blurPx > 0.15 ? `blur(${blurPx.toFixed(2)}px)` : 'none';
+    card.style.transform = `translateY(${6 * (1 - pVis)}px)`;
+
+    const reveal = smoothstep(0.28, 1, p);
+    below.style.opacity = String(reveal * reveal);
+    below.style.transform = `translateY(${14 * (1 - reveal)}px)`;
 
     if (p >= 1) finalize();
   }
@@ -147,20 +187,24 @@
     cancelAnimationFrame(raf);
     window.scrollTo(0, 0);
     measure();
-    card.classList.add('intro-floating');
-    const { startX, startY } = startCenter();
-    card.style.left = `${Math.round(startX)}px`;
-    card.style.top = `${Math.round(startY)}px`;
-    card.style.width = `${Math.max(280, Math.round(endDoc.width))}px`;
+    const sc = startCenter();
+    card.style.left = `${Math.round(sc.startX)}px`;
+    card.style.top = `${Math.round(sc.startY)}px`;
+    card.style.width = `${Math.round(endDoc.width)}px`;
+    card.style.opacity = '0';
+    card.style.filter = 'blur(5px)';
+    card.style.transform = 'translateY(6px)';
     tick();
   }
 
   measure();
-  card.classList.add('intro-floating');
   const sc = startCenter();
   card.style.left = `${Math.round(sc.startX)}px`;
   card.style.top = `${Math.round(sc.startY)}px`;
-  card.style.width = `${Math.max(280, Math.round(endDoc.width))}px`;
+  card.style.width = `${Math.round(endDoc.width)}px`;
+  card.style.opacity = '0';
+  card.style.filter = 'blur(5px)';
+  card.style.transform = 'translateY(6px)';
 
   window.addEventListener('scroll', onScroll, scrollOpts);
   window.addEventListener('resize', onResize);

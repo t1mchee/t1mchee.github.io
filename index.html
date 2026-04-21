@@ -20,6 +20,23 @@
         display: none !important;
         min-height: 0 !important;
       }
+      .page-index .home-card-slot {
+        display: none !important;
+        min-height: 0 !important;
+      }
+      .page-index #profile-card {
+        position: static !important;
+        left: auto !important;
+        top: auto !important;
+        opacity: 1 !important;
+        width: auto !important;
+        margin: revert !important;
+        z-index: auto !important;
+        visibility: visible !important;
+      }
+      .page-index .home-intro-card-mount {
+        height: auto !important;
+      }
     </style>
   </noscript>
 </head>
@@ -36,6 +53,8 @@
     </nav>
 
     <div class="home-intro-track">
+      <div id="home-card-slot" class="home-card-slot" aria-hidden="true"></div>
+      <div class="home-intro-card-mount">
       <div class="profile-card" id="profile-card">
       <div class="profile-section">
         <img src="Profile Photo.jpeg" alt="Tim Chee" class="profile-photo">
@@ -63,6 +82,20 @@
       </a>
       </div>
     </div>
+      </div>
+    <script>
+      (function () {
+        try {
+          if (!document.body.classList.contains('page-index')) return;
+          if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+          var c = document.getElementById('profile-card');
+          if (!c) return;
+          c.classList.add('intro-floating');
+          c.style.cssText =
+            'position:fixed;left:-9999px;top:0;opacity:0;margin:0;z-index:3;width:min(calc(100vw - 3rem),660px);max-width:100%;box-sizing:border-box';
+        } catch (e) {}
+      })();
+    </script>
       <div class="home-intro-spacer" id="home-intro-spacer" aria-hidden="true"></div>
     </div>
 

@@ -326,11 +326,46 @@ img {
   z-index: 1;
 }
 
+.page-index .home-card-slot {
+  width: 100%;
+  pointer-events: none;
+}
+
+.page-index:not(.home-intro-done) .home-intro-card-mount {
+  position: relative;
+  height: 0;
+  overflow: visible;
+}
+
+.page-index:not(.home-intro-done) .home-intro-card-mount #profile-card:not(.intro-floating) {
+  position: absolute;
+  left: 0;
+  right: 0;
+  width: min(calc(100vw - 3rem), var(--max-width));
+  max-width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.page-index.home-intro-done .home-intro-card-mount {
+  height: auto;
+  overflow: visible;
+}
+
+.page-index.home-intro-done .home-card-slot {
+  display: none;
+}
+
 .page-index:not(.home-intro-done) .profile-card.intro-floating {
   position: fixed;
   margin: 0;
   z-index: 3;
   box-sizing: border-box;
+  will-change: transform, opacity, filter;
+  box-shadow: 0 8px 32px rgba(26, 26, 26, 0.08);
 }
 
 .page-index:not(.home-intro-done) .home-below {
