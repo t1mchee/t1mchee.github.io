@@ -113,8 +113,8 @@
     card.style.removeProperty('width');
     card.style.removeProperty('max-width');
     card.style.removeProperty('opacity');
-    card.style.removeProperty('transform');
     card.style.removeProperty('filter');
+    card.style.removeProperty('transform');
     card.style.removeProperty('position');
     card.style.removeProperty('margin');
     card.style.removeProperty('z-index');
@@ -150,8 +150,8 @@
     const denom = Math.max(80, Math.min(range, maxScroll));
     const p = Math.min(1, Math.max(0, sy / denom));
 
-    /* Fade / sharpen first, then glide (staged for a softer entrance). */
-    const pVis = smoothstep(0, 0.2, p);
+    /* Card is fully opaque at scroll 0; subtle lift eases off as you scroll. */
+    const pLift = smoothstep(0, 0.22, p);
     const pPos = easeInOutCubic(Math.min(1, Math.max(0, (p - 0.06) / 0.94)));
 
     const { startX, startY } = startCenter();
@@ -165,10 +165,9 @@
     card.style.top = `${Math.round(y)}px`;
     card.style.width = `${Math.round(endDoc.width)}px`;
 
-    const blurPx = 5 * (1 - pVis);
-    card.style.opacity = String(pVis * pVis);
-    card.style.filter = blurPx > 0.15 ? `blur(${blurPx.toFixed(2)}px)` : 'none';
-    card.style.transform = `translateY(${6 * (1 - pVis)}px)`;
+    card.style.opacity = '1';
+    card.style.filter = 'none';
+    card.style.transform = `translateY(${4 * (1 - pLift)}px)`;
 
     const reveal = smoothstep(0.28, 1, p);
     below.style.opacity = String(reveal * reveal);
@@ -191,9 +190,6 @@
     card.style.left = `${Math.round(sc.startX)}px`;
     card.style.top = `${Math.round(sc.startY)}px`;
     card.style.width = `${Math.round(endDoc.width)}px`;
-    card.style.opacity = '0';
-    card.style.filter = 'blur(5px)';
-    card.style.transform = 'translateY(6px)';
     tick();
   }
 
@@ -202,9 +198,6 @@
   card.style.left = `${Math.round(sc.startX)}px`;
   card.style.top = `${Math.round(sc.startY)}px`;
   card.style.width = `${Math.round(endDoc.width)}px`;
-  card.style.opacity = '0';
-  card.style.filter = 'blur(5px)';
-  card.style.transform = 'translateY(6px)';
 
   window.addEventListener('scroll', onScroll, scrollOpts);
   window.addEventListener('resize', onResize);
