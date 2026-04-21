@@ -1,6 +1,6 @@
 /**
- * About page: no in-flow name card at first — card only exists fixed, fades in,
- * then scroll eases it into its slot (document slot + spacer drive scroll height).
+ * About page: hero shows profile content with no panel chrome; scroll eases the
+ * same fixed element into its slot while --card-shell fades in border/background/shadow.
  */
 (function () {
   const body = document.body;
@@ -71,6 +71,8 @@
     const cw = Math.min(window.innerWidth - 48, 660);
     card.style.width = `${cw}px`;
     card.style.maxWidth = '100%';
+    /* Slot height must match the final boxed card. */
+    card.style.setProperty('--card-shell', '1');
     void card.offsetHeight;
 
     const cr = card.getBoundingClientRect();
@@ -92,6 +94,8 @@
     range = scrollRangePx();
     spacer.style.minHeight = `${Math.ceil(range + window.innerHeight + 48)}px`;
     void spacer.offsetHeight;
+
+    card.style.removeProperty('--card-shell');
   }
 
   function startCenter() {
@@ -119,6 +123,7 @@
     card.style.removeProperty('margin');
     card.style.removeProperty('z-index');
     card.style.removeProperty('box-sizing');
+    card.style.removeProperty('--card-shell');
   }
 
   function finalize() {
@@ -150,24 +155,25 @@
     const denom = Math.max(80, Math.min(range, maxScroll));
     const p = Math.min(1, Math.max(0, sy / denom));
 
-    /* Card is fully opaque at scroll 0; subtle lift eases off as you scroll. */
-    const pLift = smoothstep(0, 0.22, p);
-    const pPos = easeInOutCubic(Math.min(1, Math.max(0, (p - 0.06) / 0.94)));
+    /* One eased progress drives both motion and panel chrome (no jump / no second reveal). */
+    const t = Math.min(1, Math.max(0, (p - 0.02) / 0.98));
+    const pEase = easeInOutCubic(t);
 
     const { startX, startY } = startCenter();
     const endLeft = endDoc.left - window.scrollX;
     const endTop = endDoc.top - sy;
 
-    const x = startX + (endLeft - startX) * pPos;
-    const y = startY + (endTop - startY) * pPos;
+    const x = startX + (endLeft - startX) * pEase;
+    const y = startY + (endTop - startY) * pEase;
 
     card.style.left = `${Math.round(x)}px`;
     card.style.top = `${Math.round(y)}px`;
     card.style.width = `${Math.round(endDoc.width)}px`;
 
+    card.style.setProperty('--card-shell', pEase.toFixed(4));
     card.style.opacity = '1';
-    card.style.filter = 'none';
-    card.style.transform = `translateY(${4 * (1 - pLift)}px)`;
+    card.style.removeProperty('filter');
+    card.style.removeProperty('transform');
 
     const reveal = smoothstep(0.28, 1, p);
     below.style.opacity = String(reveal * reveal);
