@@ -292,14 +292,18 @@ ${renderedHtml}
   }
 
   function buildCeramicBlock(entry) {
-    return `      <div class="ceramics-piece">
-        <img src="ceramics/${escapeHtml(entry.imageFileName)}" alt="${escapeHtml(entry.alt)}" loading="lazy">
-        <div class="piece-info">
-          <h3>${escapeHtml(entry.title)}</h3>
-          <p>${escapeHtml(entry.description)}</p>
-          <span class="piece-meta">${escapeHtml(entry.meta)}</span>
+    return `      <section class="ceramics-stage">
+        <div class="ceramics-stage-sticky">
+          <div class="ceramics-stage-frame">
+            <img src="ceramics/${escapeHtml(entry.imageFileName)}" alt="${escapeHtml(entry.alt)}" loading="lazy">
+          </div>
+          <div class="piece-info ceramics-stage-caption">
+            <h3>${escapeHtml(entry.title)}</h3>
+            <p>${escapeHtml(entry.description)}</p>
+            <span class="piece-meta">${escapeHtml(entry.meta)}</span>
+          </div>
         </div>
-      </div>`;
+      </section>`;
   }
 
   function upsertPostInWritingIndex(html, meta) {
@@ -318,7 +322,10 @@ ${renderedHtml}
   function upsertCeramicInIndex(html, entry) {
     const block = buildCeramicBlock(entry);
     const targetImage = escapeRegex(entry.sourceImageFileName || entry.imageFileName);
-    const imageRegex = new RegExp(`\\s*<div class="ceramics-piece">[\\s\\S]*?<img src="ceramics/${targetImage}"[^>]*>[\\s\\S]*?<\\/div>\\s*<\\/div>`, "m");
+    const imageRegex = new RegExp(
+      `\\s*<section class="ceramics-stage">[\\s\\S]*?<img src="ceramics/${targetImage}"[^>]*>[\\s\\S]*?<\\/section>`,
+      "m"
+    );
     if (imageRegex.test(html)) {
       return html.replace(imageRegex, `\n${block}`);
     }
@@ -348,7 +355,8 @@ ${renderedHtml}
 
   function parseCeramicsFromIndex(html) {
     const entries = [];
-    const regex = /<div class="ceramics-piece">[\s\S]*?<img src="ceramics\/([^"]+)" alt="([^"]*)" loading="lazy">[\s\S]*?<h3>([^<]*)<\/h3>[\s\S]*?<p>([^<]*)<\/p>[\s\S]*?<span class="piece-meta">([^<]*)<\/span>[\s\S]*?<\/div>\s*<\/div>/g;
+    const regex =
+      /<section class="ceramics-stage">[\s\S]*?<img src="ceramics\/([^"]+)" alt="([^"]*)" loading="lazy">[\s\S]*?<h3>([^<]*)<\/h3>[\s\S]*?<p>([^<]*)<\/p>[\s\S]*?<span class="piece-meta">([^<]*)<\/span>[\s\S]*?<\/section>/g;
     let match;
     while ((match = regex.exec(html)) !== null) {
       const imageFileName = match[1].trim();

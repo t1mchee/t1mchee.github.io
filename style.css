@@ -540,27 +540,62 @@ sup a:hover {
   margin-top: 2rem;
 }
 
-.ceramics-piece {
-  margin-bottom: 4rem;
+.ceramics-stage {
+  --stage-p: 0.5;
+  --stage-focus: 1;
+  --caption-a: 1;
+  position: relative;
+  min-height: 235vh;
 }
 
-.ceramics-piece img {
+.ceramics-stage-sticky {
+  position: sticky;
+  top: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1.25rem 0 2rem;
+  box-sizing: border-box;
+}
+
+.ceramics-stage-frame {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-origin: center center;
+  transform: scale(calc(0.78 + 0.22 * var(--stage-focus)));
+  opacity: calc(0.42 + 0.58 * var(--stage-focus));
+  transition: none;
+}
+
+.ceramics-stage-frame img {
   width: 100%;
   max-width: 480px;
   display: block;
-  margin: 0 auto;
   border-radius: 6px;
 }
 
 .piece-info {
   max-width: 480px;
-  margin: 1rem auto 0;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.ceramics-scroll-stage .ceramics-stage-caption {
+  opacity: var(--caption-a);
+  transform: translateY(calc((1 - var(--caption-a)) * 10px));
+  transition: none;
 }
 
 .piece-info h3 {
   font-size: 1.05rem;
   font-weight: 600;
-  margin-top: 0.75rem;
+  margin-top: 0;
   margin-bottom: 0.4rem;
 }
 
@@ -575,6 +610,27 @@ sup a:hover {
   font-size: 0.8rem;
   color: var(--text-secondary);
   font-style: italic;
+}
+
+/* Reduced motion / static: plain stacked gallery */
+body.ceramics-static .ceramics-stage {
+  min-height: 0;
+}
+
+body.ceramics-static .ceramics-stage-sticky {
+  position: relative;
+  min-height: 0;
+  padding: 0 0 3rem;
+}
+
+body.ceramics-static .ceramics-stage-frame {
+  transform: none;
+  opacity: 1;
+}
+
+body.ceramics-static .ceramics-stage-caption {
+  opacity: 1;
+  transform: none;
 }
 
 /* ─── Mermaid ─── */
