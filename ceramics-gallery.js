@@ -1,6 +1,6 @@
 /**
- * Ceramics: each piece is a tall scroll "stage"; image scales with focus at viewport
- * center; caption fades in/out. Disabled when prefers-reduced-motion.
+ * Ceramics: tall scroll stages with sticky viewport; --stage-focus is a plateau curve
+ * (fast in, long hold, fast out). Captions track the hold. Disabled when prefers-reduced-motion.
  */
 (function () {
   const stages = document.querySelectorAll('.ceramics-stage');
@@ -33,9 +33,21 @@
     return Math.max(0, Math.min(1, (y - topDoc + vh) / span));
   }
 
+  /** Scroll-driven “focus”: quick scale-in, long hold at 1, quick scale-out (not symmetric-linear). */
+  function plateauFocus(p) {
+    const rise0 = 0;
+    const rise1 = 0.12;
+    const fall0 = 0.88;
+    const fall1 = 1;
+    if (p <= rise1) return smoothstep(rise0, rise1, p);
+    if (p >= fall0) return 1 - smoothstep(fall0, fall1, p);
+    return 1;
+  }
+
+  /** Captions follow the plateau: in near end of rise, out near start of fall. */
   function captionAlpha(p) {
-    const inA = smoothstep(0.22, 0.4, p);
-    const outA = 1 - smoothstep(0.6, 0.78, p);
+    const inA = smoothstep(0.05, 0.17, p);
+    const outA = 1 - smoothstep(0.83, 0.95, p);
     return Math.max(0, Math.min(1, inA * outA));
   }
 
@@ -43,8 +55,7 @@
   function tick() {
     for (const el of stages) {
       const p = stageProgress(el);
-      const tri = 1 - Math.abs(2 * p - 1);
-      const focus = Math.pow(tri, 1.38);
+      const focus = plateauFocus(p);
       el.style.setProperty('--stage-p', p.toFixed(4));
       el.style.setProperty('--stage-focus', focus.toFixed(4));
       el.style.setProperty('--caption-a', captionAlpha(p).toFixed(4));
