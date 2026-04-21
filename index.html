@@ -7,8 +7,23 @@
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <script src="favicon.js" defer></script>
   <link rel="stylesheet" href="style.css">
+  <noscript>
+    <style>
+      .page-index .home-below {
+        position: static !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        transform: none !important;
+        overflow: visible !important;
+      }
+      .page-index .home-intro-spacer {
+        display: none !important;
+        min-height: 0 !important;
+      }
+    </style>
+  </noscript>
 </head>
-<body>
+<body class="page-index">
   <canvas id="dot-grid"></canvas>
   <div class="container">
     <nav>
@@ -20,7 +35,9 @@
       <a href="ceramics.html">Ceramics</a>
     </nav>
 
-    <div class="profile-card">
+    <div class="home-intro-track">
+      <div class="home-intro-spacer" id="home-intro-spacer" aria-hidden="true"></div>
+      <div class="profile-card" id="profile-card">
       <div class="profile-section">
         <img src="Profile Photo.jpeg" alt="Tim Chee" class="profile-photo">
         <div>
@@ -47,7 +64,9 @@
       </a>
       </div>
     </div>
+    </div>
 
+    <div class="home-below" id="home-below" aria-hidden="true">
     <h2>Currently</h2>
     <ul>
       <li>Final-year Economics student studying at Christ's College Cambridge on an <a href="https://www.sjifoundation.org/christ-college-scholarship">SJI-Foundation Scholarship</a>.</li>
@@ -79,10 +98,12 @@
       <li>The Paper Menagerie <span class="book-links">(<a href="https://www.goodreads.com/book/show/24885533-the-paper-menagerie-and-other-stories" target="_blank">Goodreads</a> · <a href="https://www.amazon.com/dp/148142436X" target="_blank">Amazon</a>)</span></li>
       <li>Mostly Harmless Econometrics <span class="book-links">(<a href="https://www.goodreads.com/book/show/3388277-mostly-harmless-econometrics" target="_blank">Goodreads</a> · <a href="https://www.amazon.com/dp/0691120358" target="_blank">Amazon</a>)</span></li>
     </ul>
+    </div>
 
   </div>
 
   <script src="dot-grid.js"></script>
+  <script src="home-intro.js"></script>
   <script data-goatcounter="https://timothychee.goatcounter.com/count"
           async src="//gc.zgo.at/count.js"></script>
 </body>

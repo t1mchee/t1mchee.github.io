@@ -320,6 +320,38 @@ img {
   flex-shrink: 0;
 }
 
+/* ─── Home / About scroll intro (index only) ─── */
+.page-index .home-intro-track {
+  position: relative;
+  z-index: 1;
+}
+
+.page-index:not(.home-intro-done) .profile-card.intro-floating {
+  position: fixed;
+  margin: 0;
+  z-index: 3;
+  box-sizing: border-box;
+}
+
+.page-index:not(.home-intro-done) .home-below {
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  right: 0;
+  top: var(--dot-grid-top);
+  bottom: 0;
+  width: 100%;
+  max-width: var(--max-width);
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 1.5rem;
+  box-sizing: border-box;
+  overflow-y: hidden;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity, transform;
+}
+
 /* ─── Posts list (writing.html) ─── */
 .writing-list {
   list-style: none;
@@ -538,6 +570,10 @@ sup a:hover {
 
   th, td {
     padding: 0.4rem 0.5rem;
+  }
+
+  .page-index:not(.home-intro-done) .home-below {
+    padding: 0 1rem;
   }
 }
 
