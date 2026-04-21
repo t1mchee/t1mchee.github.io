@@ -172,10 +172,13 @@
           setTimeout(endFlip, 400);
         }
 
-        try {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        } catch (_) {
-          window.scrollTo(0, 0);
+        /* Keep scroll position — do not jump to top. Only clamp if layout shrinks past the fold. */
+        const maxS = Math.max(
+          0,
+          document.documentElement.scrollHeight - window.innerHeight,
+        );
+        if (window.scrollY > maxS) {
+          window.scrollTo({ top: maxS, behavior: 'instant' });
         }
       });
     });
