@@ -556,8 +556,9 @@ sup a:hover {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
-  padding: 1.25rem 0 2rem;
+  gap: 0.45rem;
+  /* Extra bottom padding shifts the centered cluster upward so captions sit higher. */
+  padding: 2.5vh 0 clamp(5rem, 16vh, 10rem);
   box-sizing: border-box;
 }
 
@@ -568,8 +569,8 @@ sup a:hover {
   align-items: center;
   justify-content: center;
   transform-origin: center center;
-  transform: scale(calc(0.78 + 0.22 * var(--stage-focus)));
-  opacity: calc(0.42 + 0.58 * var(--stage-focus));
+  transform: scale(calc(0.58 + 0.42 * var(--stage-focus)));
+  opacity: calc(0.18 + 0.82 * var(--stage-focus));
   transition: none;
 }
 
@@ -588,7 +589,7 @@ sup a:hover {
 
 .ceramics-scroll-stage .ceramics-stage-caption {
   opacity: var(--caption-a);
-  transform: translateY(calc((1 - var(--caption-a)) * 10px));
+  transform: translateY(calc((1 - var(--caption-a)) * 18px));
   transition: none;
 }
 

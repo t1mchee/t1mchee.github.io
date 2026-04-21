@@ -34,8 +34,8 @@
   }
 
   function captionAlpha(p) {
-    const inA = smoothstep(0.26, 0.44, p);
-    const outA = 1 - smoothstep(0.56, 0.74, p);
+    const inA = smoothstep(0.22, 0.4, p);
+    const outA = 1 - smoothstep(0.6, 0.78, p);
     return Math.max(0, Math.min(1, inA * outA));
   }
 
@@ -43,7 +43,8 @@
   function tick() {
     for (const el of stages) {
       const p = stageProgress(el);
-      const focus = 1 - Math.abs(2 * p - 1);
+      const tri = 1 - Math.abs(2 * p - 1);
+      const focus = Math.pow(tri, 1.38);
       el.style.setProperty('--stage-p', p.toFixed(4));
       el.style.setProperty('--stage-focus', focus.toFixed(4));
       el.style.setProperty('--caption-a', captionAlpha(p).toFixed(4));
