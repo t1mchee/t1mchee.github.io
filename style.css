@@ -222,13 +222,33 @@ img {
   margin: 1.5rem 0;
 }
 
+/* ─── About name card ─── */
+.profile-card {
+  margin: 0 0 1.75rem;
+  padding: 1.2rem 1.35rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.42);
+  box-shadow: 0 1px 4px rgba(26, 26, 26, 0.05);
+}
+
+.profile-card .profile-section {
+  padding: 0;
+}
+
+.profile-card .contact-links {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
 /* ─── Profile Section ─── */
 .profile-section {
   display: flex;
   align-items: center;
   gap: 1rem;
   padding: 0.5rem 0;
-  margin-bottom: 1.75rem;
+  margin-bottom: 0;
 }
 
 .profile-section > div {
@@ -481,6 +501,10 @@ sup a:hover {
     flex-direction: column;
     align-items: center;
     text-align: center;
+  }
+
+  .profile-card {
+    padding: 1rem 1.05rem 0.95rem;
   }
 
   h1 { font-size: 1.35rem; }
