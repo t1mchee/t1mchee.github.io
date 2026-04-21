@@ -1,6 +1,6 @@
 /**
- * About page: hero shows profile content with no panel chrome; scroll eases the
- * same fixed element into its slot while --card-shell fades in border/background/shadow.
+ * About page: hero shows bare content; straight-line move (linear scroll t) with
+ * symmetric scale HERO_SCALE→1 and --card-shell easing in the panel chrome.
  */
 (function () {
   const body = document.body;
@@ -28,6 +28,8 @@
   }
 
   const scrollOpts = { passive: true };
+  /** Hero scale (symmetric “bigger then shrink”); motion path uses linear t for a straight line. */
+  const HERO_SCALE = 1.085;
 
   function navBottom() {
     return nav ? Math.round(nav.getBoundingClientRect().bottom) : 0;
@@ -101,7 +103,9 @@
   function startCenter() {
     const y0 = navBottom();
     const avail = window.innerHeight - y0;
-    let startY = y0 + avail * 0.38 - endDoc.height / 2;
+    const h = endDoc.height;
+    const visualH = h * HERO_SCALE;
+    let startY = y0 + avail * 0.38 - visualH / 2;
     const minY = y0 + 8;
     if (startY < minY) startY = minY;
     const startX = (window.innerWidth - endDoc.width) / 2;
@@ -119,6 +123,7 @@
     card.style.removeProperty('opacity');
     card.style.removeProperty('filter');
     card.style.removeProperty('transform');
+    card.style.removeProperty('transform-origin');
     card.style.removeProperty('position');
     card.style.removeProperty('margin');
     card.style.removeProperty('z-index');
@@ -155,25 +160,35 @@
     const denom = Math.max(80, Math.min(range, maxScroll));
     const p = Math.min(1, Math.max(0, sy / denom));
 
-    /* One eased progress drives both motion and panel chrome (no jump / no second reveal). */
+    /* Straight-line travel (linear t); ease drives symmetric scale + panel chrome. */
     const t = Math.min(1, Math.max(0, (p - 0.02) / 0.98));
     const pEase = easeInOutCubic(t);
 
+    const w = endDoc.width;
+    const h = endDoc.height;
     const { startX, startY } = startCenter();
     const endLeft = endDoc.left - window.scrollX;
     const endTop = endDoc.top - sy;
 
-    const x = startX + (endLeft - startX) * pEase;
-    const y = startY + (endTop - startY) * pEase;
+    const startCx = startX + w / 2;
+    const startCy = startY + h / 2;
+    const endCx = endLeft + w / 2;
+    const endCy = endTop + h / 2;
 
-    card.style.left = `${Math.round(x)}px`;
-    card.style.top = `${Math.round(y)}px`;
-    card.style.width = `${Math.round(endDoc.width)}px`;
+    const cx = startCx + (endCx - startCx) * t;
+    const cy = startCy + (endCy - startCy) * t;
+
+    const scale = HERO_SCALE + (1 - HERO_SCALE) * pEase;
+
+    card.style.left = `${Math.round(cx - w / 2)}px`;
+    card.style.top = `${Math.round(cy - h / 2)}px`;
+    card.style.width = `${Math.round(w)}px`;
+    card.style.transformOrigin = 'center center';
+    card.style.transform = `scale(${scale})`;
 
     card.style.setProperty('--card-shell', pEase.toFixed(4));
     card.style.opacity = '1';
     card.style.removeProperty('filter');
-    card.style.removeProperty('transform');
 
     const reveal = smoothstep(0.28, 1, p);
     below.style.opacity = String(reveal * reveal);

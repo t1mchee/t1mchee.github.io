@@ -373,7 +373,7 @@ img {
   box-shadow:
     0 calc(1px * var(--card-shell)) calc(4px * var(--card-shell))
       rgba(26, 26, 26, calc(0.05 * var(--card-shell)));
-  will-change: left, top;
+  will-change: left, top, transform;
 }
 
 .page-index:not(.home-intro-done) .profile-card.intro-floating .profile-photo {
