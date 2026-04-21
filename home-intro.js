@@ -39,7 +39,11 @@
 
   function scrollRangePx() {
     const slab = window.innerHeight - navBottom();
-    return Math.max(380, Math.min(920, Math.round(slab * 0.82)));
+    return Math.max(320, Math.min(720, Math.round(slab * 0.55)));
+  }
+
+  function maxScrollY() {
+    return Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
   }
 
   /** Resting slot in document coordinates */
@@ -64,8 +68,9 @@
       height: r.height,
     };
     range = scrollRangePx();
-    const slab = window.innerHeight - navBottom();
-    spacer.style.minHeight = `${Math.ceil(range + slab * 0.45)}px`;
+    /* Must leave enough document height that scrollY can reach ~range; otherwise p never hits 1 and the card stays fixed. */
+    spacer.style.minHeight = `${Math.ceil(range + window.innerHeight + 48)}px`;
+    void spacer.offsetHeight;
   }
 
   function startCenter() {
@@ -103,7 +108,14 @@
   function tick() {
     if (finalized) return;
     const sy = window.scrollY;
-    const p = Math.min(1, Math.max(0, sy / range));
+    const maxScroll = maxScrollY();
+    if (maxScroll <= 2) {
+      finalize();
+      return;
+    }
+    /* Map progress to what the page can actually scroll (may be < range). */
+    const denom = Math.max(80, Math.min(range, maxScroll));
+    const p = Math.min(1, Math.max(0, sy / denom));
     const ux = easeOutCubic(p);
 
     const { startX, startY } = startCenter();
@@ -113,9 +125,10 @@
     const x = startX + (endLeft - startX) * ux;
     const y = startY + (endTop - startY) * ux;
 
+    const w = Math.max(280, Math.round(endDoc.width));
     card.style.left = `${Math.round(x)}px`;
     card.style.top = `${Math.round(y)}px`;
-    card.style.width = `${Math.round(endDoc.width)}px`;
+    card.style.width = `${w}px`;
 
     const reveal = Math.max(0, Math.min(1, (p - 0.22) / 0.78));
     below.style.opacity = String(reveal);
@@ -138,7 +151,7 @@
     const { startX, startY } = startCenter();
     card.style.left = `${Math.round(startX)}px`;
     card.style.top = `${Math.round(startY)}px`;
-    card.style.width = `${Math.round(endDoc.width)}px`;
+    card.style.width = `${Math.max(280, Math.round(endDoc.width))}px`;
     tick();
   }
 
@@ -147,7 +160,7 @@
   const sc = startCenter();
   card.style.left = `${Math.round(sc.startX)}px`;
   card.style.top = `${Math.round(sc.startY)}px`;
-  card.style.width = `${Math.round(endDoc.width)}px`;
+  card.style.width = `${Math.max(280, Math.round(endDoc.width))}px`;
 
   window.addEventListener('scroll', onScroll, scrollOpts);
   window.addEventListener('resize', onResize);
