@@ -225,14 +225,13 @@ img {
 /* ─── Profile Section ─── */
 .profile-section {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 1rem;
   padding: 0.5rem 0;
   margin-bottom: 1.75rem;
 }
 
 .profile-section > div {
-  padding-top: 0.35rem;
   min-width: 0;
 }
 
@@ -247,7 +246,8 @@ img {
 }
 
 .intro-text {
-  font-size: 1.05rem;
+  font-size: 1.22rem;
+  line-height: 1.45;
   font-weight: normal;
   font-style: italic;
   color: #D97706;
@@ -481,10 +481,6 @@ sup a:hover {
     flex-direction: column;
     align-items: center;
     text-align: center;
-  }
-
-  .profile-section > div {
-    padding-top: 0;
   }
 
   h1 { font-size: 1.35rem; }
