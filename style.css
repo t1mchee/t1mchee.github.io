@@ -496,7 +496,7 @@ img {
   font-style: italic;
 }
 
-/* ev-cv-3d embed: full viewport width (sibling after .container), full-width iframe */
+/* ev-cv-3d embed: sibling after .container; block sized ~80% viewport for the app */
 .post-embed-ev-cv3d-bleed {
   position: relative;
   z-index: 1;
@@ -506,26 +506,33 @@ img {
 }
 
 .post-embed-ev-cv3d-bleed .post-embed-ev-cv3d-wrap {
-  margin: 0;
-  border: solid var(--border);
-  border-width: 1px 0;
-  border-radius: 0;
+  width: 80%;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
   overflow: hidden;
   background: var(--bg);
-  box-shadow: none;
+  box-shadow: 0 1px 3px rgba(26, 26, 26, 0.06);
 }
 
 .post-embed-ev-cv3d-bleed .post-embed-ev-cv3d-wrap iframe {
   display: block;
   width: 100%;
-  min-width: 100%;
-  min-height: min(920px, 92vh);
+  height: 80vh;
+  min-height: 80vh;
   border: 0;
 }
 
 @media (max-width: 600px) {
+  .post-embed-ev-cv3d-bleed .post-embed-ev-cv3d-wrap {
+    width: 100%;
+  }
+
   .post-embed-ev-cv3d-bleed .post-embed-ev-cv3d-wrap iframe {
-    min-height: min(820px, 88vh);
+    height: 80vh;
+    min-height: 80vh;
   }
 }
 
