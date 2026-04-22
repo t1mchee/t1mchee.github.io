@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Utility surface in 3D – Tim Chee</title>
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <script src="../favicon.js" defer></script>
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+    onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
+</head>
+<body>
+  <canvas id="dot-grid"></canvas>
+  <div class="container">
+    <nav>
+      <a href="../index.html" class="site-name">Tim Chee</a>
+      <a href="../index.html">About</a>
+      <a href="../writing.html" class="active">Posts</a>
+      <a href="../cv.html">CV</a>
+      <a href="../coursework.html">Coursework</a>
+      <a href="../ceramics.html">Ceramics</a>
+    </nav>
+
+    <a href="../writing.html" class="back-link">Posts</a>
+
+    <div class="post-header">
+      <h1>Utility surface in 3D</h1>
+      <p class="post-meta">April 2026</p>
+    </div>
+
+    <p>Most micro diagrams show indifference curves and budget lines in the plane, as if the object of interest were a flat map. The map is really a <em>projection</em>: those curves are level sets of a utility function \(U(x_1,x_2)\) that lives in a third dimension. We rarely draw that height, so it is easy to forget what “moving along an indifference curve” or “tangent to the budget” means in the geometry of the surface. I think that missing picture is an underappreciated source of confusion when we lean on two-dimensional graphs alone.</p>
+
+    <p>The interactive view below is the same tool as the standalone project <a href="https://github.com/t1mchee/ev-cv-3d">ev-cv-3d</a> (also <a href="https://t1mchee.github.io/ev-cv-3d/">hosted here</a>): a coloured utility “hill”, horizontal slices as indifference curves, the budget as a vertical curtain, and the Marshallian optimum on the surface. It is meant as intuition alongside the usual 2D EV/CV diagrams, not as a substitute for welfare measured in money units.</p>
+
+    <h2>How to use it</h2>
+    <ul>
+      <li><strong>3D / 2D</strong> toggles perspective; drag to rotate in 3D, scroll to zoom.</li>
+      <li><strong>Mode</strong> (numbered tabs) switches scenarios: surface overview, Slutsky/Hicksian/Marshallian stories, ordinality transforms, and a parallel EV/CV curtain view.</li>
+      <li><strong>Utility</strong> is Cobb–Douglas or CES; use the sliders for \(\alpha\) (and \(\rho\) for CES).</li>
+      <li><strong>Prices and income</strong> drive the budget plane; each mode adds its own toggles and sliders at the bottom of the panel.</li>
+    </ul>
+
+    <p class="post-note">If the frame stays blank, open the <a href="https://t1mchee.github.io/ev-cv-3d/">standalone demo</a> in a new tab. The embed is same-origin on GitHub Pages so it should load here once the script bundle is available.</p>
+
+    <div class="post-embed-ev-cv3d-wrap">
+      <iframe
+        id="ev-cv-3d-embed"
+        title="3D utility surface (ev-cv-3d)"
+        src="https://t1mchee.github.io/ev-cv-3d/"
+        loading="lazy"
+        referrerpolicy="strict-origin-when-cross-origin"
+      ></iframe>
+    </div>
+  </div>
+  <script src="utility-surface-3d-embed.js"></script>
+  <script src="../dot-grid.js"></script>
+  <script data-goatcounter="https://timothychee.goatcounter.com/count"
+          async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>

@@ -496,6 +496,31 @@ img {
   font-style: italic;
 }
 
+/* Embedded ev-cv-3d (wide controls + Plotly); horizontal scroll on narrow viewports */
+.post-embed-ev-cv3d-wrap {
+  margin: 1.75rem 0 2rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: auto;
+  background: var(--bg);
+  box-shadow: 0 1px 3px rgba(26, 26, 26, 0.06);
+  -webkit-overflow-scrolling: touch;
+}
+
+.post-embed-ev-cv3d-wrap iframe {
+  display: block;
+  width: 920px;
+  max-width: none;
+  min-height: 800px;
+  border: 0;
+}
+
+@media (max-width: 600px) {
+  .post-embed-ev-cv3d-wrap iframe {
+    min-height: 720px;
+  }
+}
+
 .back-link {
   display: inline-block;
   margin-bottom: 1.5rem;
