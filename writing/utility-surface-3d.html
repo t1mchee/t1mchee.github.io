@@ -7,10 +7,16 @@
   <link rel="icon" href="../favicon.svg" type="image/svg+xml">
   <script src="../favicon.js" defer></script>
   <link rel="stylesheet" href="../style.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
-    onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['\\(', '\\)']],
+        displayMath: [['$$', '$$']],
+      },
+      svg: { fontCache: 'global' },
+    };
+  </script>
+  <script defer id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 </head>
 <body>
   <canvas id="dot-grid"></canvas>
@@ -44,7 +50,9 @@
     </ul>
 
     <p class="post-note">If the frame stays blank, open the <a href="https://t1mchee.github.io/ev-cv-3d/">standalone demo</a> in a new tab. The embed is same-origin on GitHub Pages so it should load here once the script bundle is available.</p>
+  </div>
 
+  <section class="post-embed-ev-cv3d-bleed" aria-label="Interactive 3D utility surface">
     <div class="post-embed-ev-cv3d-wrap">
       <iframe
         id="ev-cv-3d-embed"
@@ -54,7 +62,7 @@
         referrerpolicy="strict-origin-when-cross-origin"
       ></iframe>
     </div>
-  </div>
+  </section>
   <script src="utility-surface-3d-embed.js"></script>
   <script src="../dot-grid.js"></script>
   <script data-goatcounter="https://timothychee.goatcounter.com/count"
