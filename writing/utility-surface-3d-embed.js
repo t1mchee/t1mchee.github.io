@@ -90,7 +90,7 @@
 
     shell.style.setProperty('align-items', 'flex-start', 'important');
 
-    aside.style.setProperty('max-height', 'calc(80vh - 16px)', 'important');
+    aside.style.setProperty('max-height', 'calc(92vh - 16px)', 'important');
     aside.style.setProperty('overflow-y', 'auto', 'important');
     aside.style.setProperty('padding-right', '8px', 'important');
     aside.style.setProperty('overscroll-behavior', 'contain', 'important');
