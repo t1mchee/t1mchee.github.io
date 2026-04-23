@@ -20,6 +20,7 @@
   const slot = document.getElementById('home-card-slot');
   const spacer = document.getElementById('home-intro-spacer');
   const nav = document.querySelector('nav');
+  const cue = document.getElementById('scroll-cue');
 
   if (!card || !slot || !spacer || !below) {
     body.classList.add('home-intro-done');
@@ -146,6 +147,7 @@
     slot.style.minHeight = '0';
     below.style.opacity = '';
     below.style.transform = '';
+    if (cue) cue.style.opacity = '0';
     below.removeAttribute('aria-hidden');
 
     requestAnimationFrame(() => {
@@ -228,6 +230,11 @@
     const reveal = smoothstep(0.28, 1, p);
     below.style.opacity = String(reveal * reveal);
     below.style.transform = `translateY(${14 * (1 - reveal)}px)`;
+    if (cue) {
+      const cueHide = smoothstep(0.12, 0.46, p);
+      cue.style.opacity = String(0.92 * (1 - cueHide));
+      cue.style.transform = `translateX(-50%) translateY(${4 * cueHide}px)`;
+    }
 
     if (p >= 1) finalize();
   }

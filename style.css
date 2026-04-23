@@ -420,6 +420,55 @@ img {
   will-change: opacity, transform;
 }
 
+.scroll-cue {
+  position: fixed;
+  left: 50%;
+  bottom: 1.2rem;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.22rem 0.5rem;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  letter-spacing: 0.01em;
+  opacity: 0.92;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
+  border-radius: 999px;
+  will-change: opacity, transform;
+}
+
+.scroll-cue svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  animation: scroll-cue-pulse 2s ease-in-out infinite;
+}
+
+@keyframes scroll-cue-pulse {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.78;
+  }
+  50% {
+    transform: translateY(3px);
+    opacity: 1;
+  }
+}
+
+.page-index.home-intro-done .scroll-cue {
+  opacity: 0;
+  transform: translateX(-50%) translateY(5px);
+}
+
 /* ─── Posts list (writing.html) ─── */
 .writing-list {
   list-style: none;
@@ -734,6 +783,11 @@ body.ceramics-static .ceramics-stage-caption {
 
   .page-index:not(.home-intro-done) .home-below {
     padding: 0 1rem;
+  }
+
+  .scroll-cue {
+    bottom: 0.9rem;
+    font-size: 0.76rem;
   }
 }
 
