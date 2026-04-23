@@ -62,6 +62,105 @@
     }
   }
 
+  function sanitizeLatexLikeLabel(text) {
+    if (!text) return text;
+    var out = text;
+    out = out.replace(/\$/g, '');
+    out = out.replace(/\\tilde\s*\{?\s*([A-Za-z])\s*\}?/g, '$1\u0303');
+    out = out.replace(/\\star/g, '*');
+    out = out.replace(/\\cdot/g, '·');
+    out = out.replace(/\\,/g, ' ');
+    out = out.replace(/[{}]/g, '');
+    out = out.replace(/\\[A-Za-z]+/g, '');
+    out = out.replace(/\s{2,}/g, ' ').trim();
+    return out;
+  }
+
+  function patchPlotLabels(doc) {
+    var texts = doc.querySelectorAll('.js-plotly-plot svg text, .plotly svg text');
+    for (var i = 0; i < texts.length; i++) {
+      var node = texts[i];
+      var raw = node.textContent || '';
+      if (raw.indexOf('\\') === -1 && raw.indexOf('$') === -1) continue;
+      var cleaned = sanitizeLatexLikeLabel(raw);
+      if (cleaned && cleaned !== raw) node.textContent = cleaned;
+    }
+  }
+
+  function clonePlain(obj) {
+    if (!obj) return null;
+    try {
+      return JSON.parse(JSON.stringify(obj));
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function captureViewState(doc) {
+    var plot = doc.querySelector('.js-plotly-plot');
+    if (!plot || !plot._fullLayout) return null;
+    var full = plot._fullLayout;
+    var scene = full.scene || null;
+    return {
+      sceneCamera: scene ? clonePlain(scene.camera) : null,
+      sceneXRange: scene && scene.xaxis ? clonePlain(scene.xaxis.range) : null,
+      sceneYRange: scene && scene.yaxis ? clonePlain(scene.yaxis.range) : null,
+      sceneZRange: scene && scene.zaxis ? clonePlain(scene.zaxis.range) : null,
+      xRange: full.xaxis ? clonePlain(full.xaxis.range) : null,
+      yRange: full.yaxis ? clonePlain(full.yaxis.range) : null,
+    };
+  }
+
+  function getPlotlyApi(doc, plot) {
+    var win = doc.defaultView || window;
+    if (win.Plotly && typeof win.Plotly.relayout === 'function') return win.Plotly;
+    if (plot && plot._context && plot._context.Plotly && typeof plot._context.Plotly.relayout === 'function') {
+      return plot._context.Plotly;
+    }
+    return null;
+  }
+
+  function restoreViewState(doc, snapshot) {
+    if (!snapshot) return;
+    var plot = doc.querySelector('.js-plotly-plot');
+    if (!plot) return;
+    var PlotlyApi = getPlotlyApi(doc, plot);
+    if (!PlotlyApi) return;
+
+    var relayout = {};
+    if (snapshot.sceneCamera) relayout['scene.camera'] = snapshot.sceneCamera;
+    if (snapshot.sceneXRange) relayout['scene.xaxis.range'] = snapshot.sceneXRange;
+    if (snapshot.sceneYRange) relayout['scene.yaxis.range'] = snapshot.sceneYRange;
+    if (snapshot.sceneZRange) relayout['scene.zaxis.range'] = snapshot.sceneZRange;
+    if (snapshot.xRange) relayout['xaxis.range'] = snapshot.xRange;
+    if (snapshot.yRange) relayout['yaxis.range'] = snapshot.yRange;
+    if (!Object.keys(relayout).length) return;
+
+    PlotlyApi.relayout(plot, relayout).catch(function () {});
+  }
+
+  function attachShowSurfaceScaleLock(doc) {
+    var labels = doc.querySelectorAll('label');
+    var cb = null;
+    for (var i = 0; i < labels.length; i++) {
+      var t = labels[i].textContent || '';
+      if (t.indexOf('Show utility surface') !== -1) {
+        cb = labels[i].querySelector('input[type="checkbox"]');
+        break;
+      }
+    }
+    if (!cb || cb.dataset.t1mScaleLockAttached === '1') return;
+
+    cb.dataset.t1mScaleLockAttached = '1';
+    cb.addEventListener('change', function () {
+      var snapshot = captureViewState(doc);
+      setTimeout(function () {
+        restoreViewState(doc, snapshot);
+        patchPlotLabels(doc);
+      }, 120);
+    });
+  }
+
   function measureHeight(doc) {
     var body = doc.body;
     var html = doc.documentElement;
@@ -87,6 +186,8 @@
     patchInline(doc);
     configureSplitScroll(doc);
     resizeToContent(doc);
+    patchPlotLabels(doc);
+    attachShowSurfaceScaleLock(doc);
   }
 
   function findControlsColumn(doc) {
