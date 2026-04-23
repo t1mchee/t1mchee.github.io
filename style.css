@@ -510,7 +510,7 @@ img {
   font-style: italic;
 }
 
-/* ev-cv-3d embed in-post: 80% width, auto-height via JS. */
+/* ev-cv-3d embed in-post: 80% viewport width, fixed viewport-height frame. */
 .post-embed-ev-cv3d {
   margin: 1rem 0 1.5rem;
 }
@@ -530,7 +530,7 @@ img {
 .post-embed-ev-cv3d-wrap iframe {
   display: block;
   width: 100%;
-  min-height: 80vh;
+  height: 80vh;
   border: 0;
 }
 

@@ -1,13 +1,12 @@
 /**
  * In-post ev-cv-3d embed:
  * - keep site palette close to local style (same-origin iframe)
- * - auto-size iframe height to content so the page scroll owns navigation
- * - make controls column scroll while chart stays in place
+ * - fixed-height iframe viewport with scrollable controls pane
+ * - keep chart pane sticky while controls scroll
  */
 (function () {
   var iframe = document.getElementById('ev-cv-3d-embed');
   if (!iframe) return;
-  var lastAppliedHeight = 0;
 
   function injectBase(doc) {
     if (!doc || !doc.head) return;
@@ -87,6 +86,81 @@
     }
   }
 
+  function normalizeTextValue(value) {
+    if (typeof value === 'string') return sanitizeLatexLikeLabel(value);
+    if (Array.isArray(value)) {
+      var changed = false;
+      var mapped = value.map(function (v) {
+        if (typeof v !== 'string') return v;
+        var cleaned = sanitizeLatexLikeLabel(v);
+        if (cleaned !== v) changed = true;
+        return cleaned;
+      });
+      return changed ? mapped : value;
+    }
+    return value;
+  }
+
+  function patchPlotlyDataLabels(doc) {
+    var plot = doc.querySelector('.js-plotly-plot');
+    if (!plot || !plot.data || !plot.data.length) return;
+    var PlotlyApi = getPlotlyApi(doc, plot);
+    if (!PlotlyApi) return;
+
+    for (var i = 0; i < plot.data.length; i++) {
+      var trace = plot.data[i];
+      if (!trace) continue;
+
+      var patch = {};
+      var changed = false;
+      ['text', 'name', 'hovertext'].forEach(function (key) {
+        if (!(key in trace)) return;
+        var original = trace[key];
+        var normalized = normalizeTextValue(original);
+        if (normalized !== original) {
+          patch[key] = normalized;
+          changed = true;
+        }
+      });
+
+      if (changed) {
+        PlotlyApi.restyle(plot, patch, [i]).catch(function () {});
+      }
+    }
+
+    var relayoutPatch = {};
+    var hasRelayout = false;
+    var full = plot._fullLayout || {};
+
+    if (Array.isArray(full.annotations)) {
+      for (var a = 0; a < full.annotations.length; a++) {
+        var ann = full.annotations[a];
+        if (!ann || typeof ann.text !== 'string') continue;
+        var cleanedAnn = sanitizeLatexLikeLabel(ann.text);
+        if (cleanedAnn !== ann.text) {
+          relayoutPatch['annotations[' + a + '].text'] = cleanedAnn;
+          hasRelayout = true;
+        }
+      }
+    }
+
+    if (full.scene && Array.isArray(full.scene.annotations)) {
+      for (var sa = 0; sa < full.scene.annotations.length; sa++) {
+        var sann = full.scene.annotations[sa];
+        if (!sann || typeof sann.text !== 'string') continue;
+        var cleanedSann = sanitizeLatexLikeLabel(sann.text);
+        if (cleanedSann !== sann.text) {
+          relayoutPatch['scene.annotations[' + sa + '].text'] = cleanedSann;
+          hasRelayout = true;
+        }
+      }
+    }
+
+    if (hasRelayout) {
+      PlotlyApi.relayout(plot, relayoutPatch).catch(function () {});
+    }
+  }
+
   function clonePlain(obj) {
     if (!obj) return null;
     try {
@@ -161,32 +235,12 @@
     });
   }
 
-  function measureHeight(doc) {
-    var body = doc.body;
-    var html = doc.documentElement;
-    if (!body || !html) return 0;
-    var root = doc.getElementById('root');
-    var rootRect = root ? root.getBoundingClientRect() : { height: 0 };
-    return Math.max(body.scrollHeight, html.scrollHeight, Math.ceil(rootRect.height));
-  }
-
-  function resizeToContent(doc) {
-    var measured = measureHeight(doc);
-    if (!measured) return;
-    var minPx = Math.round(window.innerHeight * 0.8);
-    var maxPx = Math.round(window.innerHeight * 2.2);
-    var height = Math.max(minPx, Math.min(maxPx, measured));
-    if (Math.abs(height - lastAppliedHeight) < 6) return;
-    iframe.style.height = height + 'px';
-    lastAppliedHeight = height;
-  }
-
   function apply(doc) {
     injectBase(doc);
     patchInline(doc);
     configureSplitScroll(doc);
-    resizeToContent(doc);
     patchPlotLabels(doc);
+    patchPlotlyDataLabels(doc);
     attachShowSurfaceScaleLock(doc);
   }
 
@@ -258,24 +312,12 @@
     chartPane.style.setProperty('align-self', 'flex-start', 'important');
   }
 
-  function setupResizeObserver(doc) {
-    if (!('ResizeObserver' in window)) return;
-    var target = doc.documentElement || doc.body;
-    if (!target) return;
-
-    var ro = new ResizeObserver(function () {
-      resizeToContent(doc);
-    });
-    ro.observe(target);
-  }
-
   function onLoad() {
     try {
       var doc = iframe.contentDocument;
       if (!doc) return;
 
       apply(doc);
-      setupResizeObserver(doc);
 
       [80, 250, 600, 1200, 2200].forEach(function (ms) {
         setTimeout(function () {
@@ -288,9 +330,4 @@
   }
 
   iframe.addEventListener('load', onLoad);
-  window.addEventListener('resize', function () {
-    try {
-      if (iframe.contentDocument) resizeToContent(iframe.contentDocument);
-    } catch (e) {}
-  });
 })();
