@@ -113,16 +113,24 @@
     while (node && node.parentElement) {
       var p = node.parentElement;
       var style = p.getAttribute('style') || '';
-      if (/display:\s*flex/i.test(style) && p.children.length >= 2) return p;
+      if (/display:\s*(flex|grid)/i.test(style) && p.children.length >= 2) return p;
       node = p;
     }
     return null;
   }
 
+  function findControlsPane(row, controlsCol) {
+    var aside = controlsCol.closest ? controlsCol.closest('aside') : null;
+    if (aside && aside.parentElement === row) return aside;
+    return controlsCol;
+  }
+
   function findChartPane(row, controlsCol) {
     for (var i = 0; i < row.children.length; i++) {
       var child = row.children[i];
-      if (child === controlsCol) continue;
+      if (child === controlsCol || (controlsCol.closest && child === controlsCol.closest('aside'))) {
+        continue;
+      }
       if (child.querySelector('.plotly, .js-plotly-plot')) return child;
     }
     return null;
@@ -133,14 +141,16 @@
     if (!controlsCol) return;
     var row = findLayoutRow(controlsCol);
     if (!row) return;
+    var controlsPane = findControlsPane(row, controlsCol);
     var chartPane = findChartPane(row, controlsCol);
     if (!chartPane) return;
 
     row.style.setProperty('align-items', 'flex-start', 'important');
-    controlsCol.style.setProperty('max-height', 'calc(100vh - 24px)', 'important');
-    controlsCol.style.setProperty('overflow-y', 'auto', 'important');
-    controlsCol.style.setProperty('padding-right', '8px', 'important');
-    controlsCol.style.setProperty('overscroll-behavior', 'contain', 'important');
+    controlsPane.style.setProperty('max-height', 'calc(100vh - 24px)', 'important');
+    controlsPane.style.setProperty('overflow-y', 'auto', 'important');
+    controlsPane.style.setProperty('padding-right', '8px', 'important');
+    controlsPane.style.setProperty('overscroll-behavior', 'contain', 'important');
+    controlsPane.style.setProperty('align-self', 'flex-start', 'important');
 
     chartPane.style.setProperty('position', 'sticky', 'important');
     chartPane.style.setProperty('top', '12px', 'important');
