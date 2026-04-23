@@ -60,6 +60,20 @@ nav {
   background: var(--bg);
 }
 
+/* Full-bleed opaque backdrop for sticky nav (prevents full-width embeds showing through). */
+nav::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100vw;
+  top: 0;
+  bottom: 0;
+  background: var(--bg);
+  z-index: -1;
+  pointer-events: none;
+}
+
 /* Full-bleed rule under nav (nav stays column-width; line spans viewport) */
 nav::after {
   content: "";

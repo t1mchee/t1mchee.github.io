@@ -2,6 +2,7 @@
  * In-post ev-cv-3d embed:
  * - keep site palette close to local style (same-origin iframe)
  * - auto-size iframe height to content so the page scroll owns navigation
+ * - make controls column scroll while chart stays in place
  */
 (function () {
   var iframe = document.getElementById('ev-cv-3d-embed');
@@ -35,7 +36,7 @@
         el.style.setProperty('background', '#EDE7DD', 'important');
       }
       if (/border:\s*1px solid #d1d5db/i.test(st) || /border:\s*1px solid #e5e7eb/i.test(st)) {
-        el.style.setProperty('border-color', '#DDD5C9', 'important');
+        el.style.setProperty('border-color', 'transparent', 'important');
       }
       if (/color:\s*#111827/i.test(st)) {
         el.style.setProperty('color', '#1a1a1a', 'important');
@@ -49,6 +50,14 @@
       ) {
         el.style.setProperty('background', '#D97706', 'important');
       }
+    }
+
+    var controls = doc.querySelectorAll(
+      'button, [role="button"], input[type="radio"], input[type="checkbox"], label'
+    );
+    for (var j = 0; j < controls.length; j++) {
+      controls[j].style.setProperty('box-shadow', 'none', 'important');
+      controls[j].style.setProperty('outline', 'none', 'important');
     }
   }
 
@@ -76,7 +85,66 @@
   function apply(doc) {
     injectBase(doc);
     patchInline(doc);
+    configureSplitScroll(doc);
     resizeToContent(doc);
+  }
+
+  function findControlsColumn(doc) {
+    var all = doc.querySelectorAll('div');
+    var winner = null;
+    var winnerScore = 0;
+    for (var i = 0; i < all.length; i++) {
+      var t = (all[i].textContent || '').toUpperCase();
+      var score = 0;
+      if (t.indexOf('VIEW') !== -1) score++;
+      if (t.indexOf('MODE') !== -1) score++;
+      if (t.indexOf('UTILITY FUNCTION') !== -1) score++;
+      if (t.indexOf('PRICES / INCOME') !== -1) score++;
+      if (score >= 3 && score > winnerScore) {
+        winner = all[i];
+        winnerScore = score;
+      }
+    }
+    return winner;
+  }
+
+  function findLayoutRow(controlsCol) {
+    var node = controlsCol;
+    while (node && node.parentElement) {
+      var p = node.parentElement;
+      var style = p.getAttribute('style') || '';
+      if (/display:\s*flex/i.test(style) && p.children.length >= 2) return p;
+      node = p;
+    }
+    return null;
+  }
+
+  function findChartPane(row, controlsCol) {
+    for (var i = 0; i < row.children.length; i++) {
+      var child = row.children[i];
+      if (child === controlsCol) continue;
+      if (child.querySelector('.plotly, .js-plotly-plot')) return child;
+    }
+    return null;
+  }
+
+  function configureSplitScroll(doc) {
+    var controlsCol = findControlsColumn(doc);
+    if (!controlsCol) return;
+    var row = findLayoutRow(controlsCol);
+    if (!row) return;
+    var chartPane = findChartPane(row, controlsCol);
+    if (!chartPane) return;
+
+    row.style.setProperty('align-items', 'flex-start', 'important');
+    controlsCol.style.setProperty('max-height', 'calc(100vh - 24px)', 'important');
+    controlsCol.style.setProperty('overflow-y', 'auto', 'important');
+    controlsCol.style.setProperty('padding-right', '8px', 'important');
+    controlsCol.style.setProperty('overscroll-behavior', 'contain', 'important');
+
+    chartPane.style.setProperty('position', 'sticky', 'important');
+    chartPane.style.setProperty('top', '12px', 'important');
+    chartPane.style.setProperty('align-self', 'flex-start', 'important');
   }
 
   function setupResizeObserver(doc) {
@@ -97,6 +165,12 @@
 
       apply(doc);
       setupResizeObserver(doc);
+      if ('MutationObserver' in window) {
+        var mo = new MutationObserver(function () {
+          apply(doc);
+        });
+        mo.observe(doc.body, { childList: true, subtree: true });
+      }
 
       [80, 250, 600, 1200, 2200].forEach(function (ms) {
         setTimeout(function () {
