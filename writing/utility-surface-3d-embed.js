@@ -16,6 +16,7 @@
     style.id = 't1mchee-embed-theme-base';
     style.textContent =
       'html,body{background:#F5F0E8!important;color:#1a1a1a!important;}' +
+      'header{display:none!important;}' +
       '#root{background:transparent!important;' +
       'font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;}';
     doc.head.appendChild(style);
