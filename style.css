@@ -431,10 +431,12 @@ img {
 }
 
 .writing-list .post-title {
+  display: block;
   font-weight: 600;
   font-size: 1.05rem;
   text-decoration: none;
   color: var(--text);
+  margin-bottom: 0.35rem;
 }
 
 .writing-list .post-title:hover {
@@ -448,7 +450,7 @@ img {
   border: 1px solid var(--border);
   border-radius: 3px;
   padding: 0.1rem 0.45rem;
-  margin-left: 0.5rem;
+  margin-left: 0;
   vertical-align: middle;
   font-weight: 400;
 }
@@ -516,10 +518,10 @@ img {
 }
 
 .post-embed-ev-cv3d-wrap {
-  width: min(80vw, 1300px);
+  width: 100vw;
   max-width: none;
-  margin-left: calc(50% - min(40vw, 650px));
-  margin-right: calc(50% - min(40vw, 650px));
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--bg);
