@@ -7,6 +7,7 @@
 (function () {
   var iframe = document.getElementById('ev-cv-3d-embed');
   if (!iframe) return;
+  var lastAppliedHeight = 0;
 
   function injectBase(doc) {
     if (!doc || !doc.head) return;
@@ -65,21 +66,20 @@
     var body = doc.body;
     var html = doc.documentElement;
     if (!body || !html) return 0;
-    return Math.max(
-      body.scrollHeight,
-      body.offsetHeight,
-      html.clientHeight,
-      html.scrollHeight,
-      html.offsetHeight
-    );
+    var root = doc.getElementById('root');
+    var rootRect = root ? root.getBoundingClientRect() : { height: 0 };
+    return Math.max(body.scrollHeight, html.scrollHeight, Math.ceil(rootRect.height));
   }
 
   function resizeToContent(doc) {
     var measured = measureHeight(doc);
     if (!measured) return;
     var minPx = Math.round(window.innerHeight * 0.8);
-    var height = Math.max(minPx, measured + 4);
+    var maxPx = Math.round(window.innerHeight * 2.2);
+    var height = Math.max(minPx, Math.min(maxPx, measured));
+    if (Math.abs(height - lastAppliedHeight) < 6) return;
     iframe.style.height = height + 'px';
+    lastAppliedHeight = height;
   }
 
   function apply(doc) {
@@ -165,12 +165,6 @@
 
       apply(doc);
       setupResizeObserver(doc);
-      if ('MutationObserver' in window) {
-        var mo = new MutationObserver(function () {
-          apply(doc);
-        });
-        mo.observe(doc.body, { childList: true, subtree: true });
-      }
 
       [80, 250, 600, 1200, 2200].forEach(function (ms) {
         setTimeout(function () {
