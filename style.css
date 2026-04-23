@@ -502,9 +502,10 @@ img {
 }
 
 .post-embed-ev-cv3d-wrap {
-  width: 80%;
-  max-width: 100%;
-  margin: 0 auto;
+  width: min(80vw, 1300px);
+  max-width: none;
+  margin-left: calc(50% - min(40vw, 650px));
+  margin-right: calc(50% - min(40vw, 650px));
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--bg);
@@ -522,6 +523,8 @@ img {
 @media (max-width: 600px) {
   .post-embed-ev-cv3d-wrap {
     width: 100%;
+    margin-left: 0;
+    margin-right: 0;
   }
 }
 
