@@ -41,7 +41,7 @@
   function plateauFocus(p) {
     const rise0 = 0;
     const rise1 = 0.3;
-    const fall0 = 0.52;
+    const fall0 = 0.45;
     const fall1 = 1;
     if (p <= rise1) return smoothstep(rise0, rise1, p);
     if (p >= fall0) return 1 - smoothstep(fall0, fall1, p);
@@ -51,7 +51,7 @@
   /** Captions: match rise; fade out across the longer fall. */
   function captionAlpha(p) {
     const inA = smoothstep(0.08, 0.29, p);
-    const outA = 1 - smoothstep(0.5, 0.9, p);
+    const outA = 1 - smoothstep(0.44, 0.88, p);
     return Math.max(0, Math.min(1, inA * outA));
   }
 
