@@ -496,44 +496,22 @@ img {
   font-style: italic;
 }
 
-/* ev-cv-3d embed: sibling after .container; block sized ~80% viewport for the app */
-.post-embed-ev-cv3d-bleed {
-  position: relative;
-  z-index: 1;
-  width: 100%;
-  margin: 1.75rem 0 2rem;
-  box-sizing: border-box;
-}
-
-.post-embed-ev-cv3d-bleed .post-embed-ev-cv3d-wrap {
-  width: 80%;
-  max-width: 100%;
-  margin-left: auto;
-  margin-right: auto;
+/* Utility-surface launch CTA (no iframe embedding). */
+.post-tool-launch {
+  display: inline-block;
+  padding: 0.58rem 0.85rem;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  overflow: hidden;
-  background: var(--bg);
-  box-shadow: 0 1px 3px rgba(26, 26, 26, 0.06);
+  border-radius: 6px;
+  background: var(--code-bg);
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 600;
+  line-height: 1.2;
 }
 
-.post-embed-ev-cv3d-bleed .post-embed-ev-cv3d-wrap iframe {
-  display: block;
-  width: 100%;
-  height: 80vh;
-  min-height: 80vh;
-  border: 0;
-}
-
-@media (max-width: 600px) {
-  .post-embed-ev-cv3d-bleed .post-embed-ev-cv3d-wrap {
-    width: 100%;
-  }
-
-  .post-embed-ev-cv3d-bleed .post-embed-ev-cv3d-wrap iframe {
-    height: 80vh;
-    min-height: 80vh;
-  }
+.post-tool-launch:hover {
+  color: var(--link-hover);
+  border-color: var(--text-secondary);
 }
 
 /* MathJax (SVG) on warm background */
