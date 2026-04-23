@@ -49,13 +49,24 @@
       <li><strong>Prices and income</strong> drive the budget plane; each mode adds its own toggles and sliders at the bottom of the panel.</li>
     </ul>
 
-    <p class="post-note">I moved the interactive out of this page so it can run as a full window app without iframe clipping.</p>
+    <p class="post-note">Interactive embedded below. The frame auto-expands to the app height so you can scroll the page normally without clipping.</p>
 
-    <p><a class="post-tool-launch" href="https://t1mchee.github.io/ev-cv-3d/">Open the utility surface interactive</a></p>
+    <section class="post-embed-ev-cv3d" aria-label="Interactive 3D utility surface">
+      <div class="post-embed-ev-cv3d-wrap">
+        <iframe
+          id="ev-cv-3d-embed"
+          title="3D utility surface (ev-cv-3d)"
+          src="https://t1mchee.github.io/ev-cv-3d/"
+          loading="lazy"
+          referrerpolicy="strict-origin-when-cross-origin"
+        ></iframe>
+      </div>
+    </section>
 
-    <p class="post-note">Tip: open in a new tab if you want to keep this note beside the tool.</p>
+    <p class="post-note">If your browser blocks the embed, open the <a href="https://t1mchee.github.io/ev-cv-3d/">standalone interactive</a>.</p>
   </div>
 
+  <script src="utility-surface-3d-embed.js"></script>
   <script src="../dot-grid.js"></script>
   <script data-goatcounter="https://timothychee.goatcounter.com/count"
           async src="//gc.zgo.at/count.js"></script>

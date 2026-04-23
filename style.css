@@ -496,22 +496,33 @@ img {
   font-style: italic;
 }
 
-/* Utility-surface launch CTA (no iframe embedding). */
-.post-tool-launch {
-  display: inline-block;
-  padding: 0.58rem 0.85rem;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--code-bg);
-  color: var(--text);
-  text-decoration: none;
-  font-weight: 600;
-  line-height: 1.2;
+/* ev-cv-3d embed in-post: 80% width, auto-height via JS. */
+.post-embed-ev-cv3d {
+  margin: 1rem 0 1.5rem;
 }
 
-.post-tool-launch:hover {
-  color: var(--link-hover);
-  border-color: var(--text-secondary);
+.post-embed-ev-cv3d-wrap {
+  width: 80%;
+  max-width: 100%;
+  margin: 0 auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  box-shadow: 0 1px 3px rgba(26, 26, 26, 0.06);
+  overflow: hidden;
+}
+
+.post-embed-ev-cv3d-wrap iframe {
+  display: block;
+  width: 100%;
+  min-height: 80vh;
+  border: 0;
+}
+
+@media (max-width: 600px) {
+  .post-embed-ev-cv3d-wrap {
+    width: 100%;
+  }
 }
 
 /* MathJax (SVG) on warm background */
