@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Measuring Unmeasurability – Tim Chee</title>
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <script src="../favicon.js" defer></script>
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    .pdf-container {
+      width: 100%;
+      max-width: 100%;
+      margin-top: 1rem;
+    }
+    .pdf-container iframe {
+      width: 100%;
+      height: 80vh;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+    .pdf-download {
+      display: inline-block;
+      margin-top: 0.75rem;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+  </style>
+</head>
+<body>
+  <canvas id="dot-grid"></canvas>
+  <div class="container">
+    <nav>
+      <a href="../index.html" class="site-name">Tim Chee</a>
+      <a href="../index.html">About</a>
+      <a href="../writing.html" class="active">Posts</a>
+      <a href="../cv.html">CV</a>
+      <a href="../coursework.html">Coursework</a>
+      <a href="../ceramics.html">Ceramics</a>
+    </nav>
+
+    <a href="../writing.html" class="back-link">Posts</a>
+
+    <div class="post-header">
+      <h1>Measuring Unmeasurability</h1>
+      <p class="post-meta">May 2026 · Cambridge Part IIB Dissertation</p>
+    </div>
+
+    <p>Do electoral incentives make politicians speak more ambiguously? I build a signal model in which a rational voter anchors on prior reputation, so vagueness shields a favourable prior but cannot rescue an unfavourable one. To test it I construct <em>semantic dispersion</em>, an LLM-derived measure of how wide a hedged claim's range of meanings is, validated at 92.3% agreement with human raters. Applied to 62,169 hedged Singapore parliamentary claims, a redistricting shock produces opposing-signed responses that rule out uniform confounders: MPs who lost favourable voters became vaguer by 0.15 standard deviations, and those who gained unfavourable voters became more precise by 0.13. A within-chamber control using Singapore's Nominated MP institution, whose members face zero electoral pressure, corroborates the result.</p>
+
+    <div class="pdf-container">
+      <iframe src="measuring-unmeasurability/dissertation.pdf" title="Measuring Unmeasurability dissertation"></iframe>
+    </div>
+    <a href="measuring-unmeasurability/dissertation.pdf" class="pdf-download" download>↓ Download PDF</a>
+  </div>
+  <script src="../dot-grid.js"></script>
+  <script data-goatcounter="https://timothychee.goatcounter.com/count"
+          async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
