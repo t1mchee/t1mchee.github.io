@@ -470,6 +470,14 @@ img {
 }
 
 /* ─── Posts list (writing.html) ─── */
+.page-intro {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  max-width: 60ch;
+  margin: -0.25rem 0 1.75rem;
+  line-height: 1.55;
+}
+
 .writing-list {
   list-style: none;
   padding: 0;
